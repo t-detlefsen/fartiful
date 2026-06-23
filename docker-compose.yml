@@ -28,7 +28,7 @@ services:
 
   # Application
   app:
-    image: ghcr.io/polaroi8d/cactoide/cactoide:${APP_VERSION:-latest}
+    image: cactoide-custom
     build: .
     container_name: cactoide-app
     ports:
@@ -46,6 +46,7 @@ services:
         condition: service_healthy
     networks:
       - cactoide-network
+      - web
     restart: unless-stopped
 
 volumes:
@@ -54,3 +55,5 @@ volumes:
 networks:
   cactoide-network:
     driver: bridge
+  web:
+    external: true
