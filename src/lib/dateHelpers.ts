@@ -13,7 +13,11 @@ export const formatDate = (dateString: string): string => {
 
 export const formatTime = (timeString: string): string => {
 	const [hours, minutes] = timeString.split(':');
-	return `${hours}:${minutes}`;
+	if (parseInt(hours) > 12) {
+		return `${parseInt(hours) - 12}:${minutes} PM`;
+	} else {
+		return `${hours}:${minutes} AM`;
+	}
 };
 
 // Helper function to check if an event is within a time range
