@@ -13,11 +13,86 @@
 	<section class="mx-auto w-full pt-20 pb-20 md:w-3/4">
 		<div class="container mx-auto px-4 text-center">
 			<h1 class="text-5xl font-bold md:text-7xl lg:text-8xl">
-				{t('home.mainTitle')}<span class="text-violet-400"
-					><a href="https://en.wikipedia.org/wiki/Cactoideae" target="_blank">*</a></span
-				> 🌵
+				{t('home.mainTitle')}<span class="text-violet-400"></span>
 			</h1>
 
+			<!--- WHAT IS THIS? --->
+			<h2 class="mt-6 pt-8 text-xl md:text-2xl">
+				{t('home.whatFartifulTitle')}
+			</h2>
+			<p class="mt-4 text-lg md:text-xl">
+				{t('home.whatFartifulDescription')}
+			</p>
+
+			<div class="mt-8 flex items-center justify-center gap-3">
+				<a
+					href="https://nyc-noise.com/drone-party/#gist"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="group flex items-center gap-2 rounded-sm border-2 border-violet-500/50 px-6 py-3 text-sm font-medium transition-all duration-300 hover:scale-105 hover:border-violet-500 hover:bg-violet-500/10 md:text-base"
+					aria-label={t('home.viewOnGitHub')}
+				>
+					<span>{t('home.nycNoiseButton')}</span>
+				</a>
+			</div>
+
+			<!-- How It Works Section -->
+			<section class="py-20">
+				<div class="container mx-auto px-4">
+					<h2 class=" mb-16 text-center text-4xl font-bold">{t('home.howItWorksTitle')}</h2>
+
+					<div class="grid gap-8 md:grid-cols-3">
+						<!-- Step 1 -->
+						<div class="text-center">
+							<h3 class="mb-4 text-xl font-bold text-white">
+								<span class="text-violet-400">1.</span>
+								{t('home.step1Title')}
+							</h3>
+							<p class="">
+								{t('home.step1Description')}
+							</p>
+						</div>
+
+						<!-- Step 2 -->
+						<div class="text-center">
+							<h3 class="mb-4 text-xl font-bold text-white">
+								<span class="text-violet-400">2.</span>
+								{t('home.step2Title')}
+							</h3>
+							<p class="">
+								{t('home.step2Description')}
+							</p>
+						</div>
+
+						<!-- Step 3 -->
+						<div class="text-center">
+							<h3 class="mb-4 text-xl font-bold text-white">
+								<span class="text-violet-400">3.</span>
+								{t('home.step3Title')}
+							</h3>
+							<p class="">{t('home.step3Description')}</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- CTA Section -->
+			<section class="py-20">
+				<div class="container mx-auto px-4 text-center">
+					<h2 class="mb-6 text-4xl font-bold text-white">
+						{t('home.ctaTitle')}
+					</h2>
+					<p class="mb-10 text-xl">{t('home.ctaDescription')}</p>
+					<button
+						on:click={() => goto('/create')}
+						class="rounded-sm border-2 border-violet-500 px-8 py-4 font-bold duration-400 hover:scale-110 hover:bg-violet-500/10"
+					>
+						{t('home.ctaButton')}
+					</button>
+				</div>
+			</section>
+
+			<!--- CACTOIDE --->
 			<h2 class="mt-6 text-xl md:text-2xl">{t('home.subtitle')}</h2>
 			<p class="mt-4 text-lg italic md:text-xl">
 				{t('home.tagline')}
@@ -50,155 +125,6 @@
 			<p class="mt-4 text-sm text-slate-400 md:text-base">
 				{t('home.openSourceDescription')}
 			</p>
-
-			<h2 class="mt-6 pt-8 text-xl md:text-2xl">
-				{t('home.whyCactoideTitle')}<span class="text-violet-400"
-					><a href="https://en.wikipedia.org/wiki/Cactoideae" target="_blank">*</a></span
-				>
-			</h2>
-			<p class="mt-4 text-lg md:text-xl">
-				{t('home.whyCactoideDescription')}
-			</p>
-
-			<button
-				on:click={() => goto('/create')}
-				class="mt-8 rounded-sm border-2 border-violet-500 px-8 py-4 font-bold duration-400 hover:scale-110 hover:bg-violet-500/10"
-			>
-				{t('home.createEventNow')}
-			</button>
-		</div>
-	</section>
-
-	<!-- Public Events Section -->
-	<section class="py-8">
-		<div class="container mx-auto px-4">
-			<div class="mb-16 text-center">
-				<h2 class="text-4xl font-bold text-white">{t('home.discoverPublicEventsTitle')}</h2>
-				<p class="mt-4 text-xl text-slate-300">{t('home.discoverPublicEventsDescription')}</p>
-			</div>
-
-			<div class="text-center">
-				<button
-					on:click={() => goto('/discover')}
-					class="rounded-sm border-2 border-violet-500 px-8 py-4 font-bold duration-400 hover:scale-110 hover:bg-violet-500/10"
-				>
-					{t('home.browseAllPublicEvents')}
-				</button>
-			</div>
-		</div>
-	</section>
-
-	<!-- Features Section -->
-	<section class="py-20">
-		<div class="container mx-auto px-4">
-			<h2 class=" mb-16 text-center text-4xl font-bold">
-				{t('home.whyCactoideFeatureTitle')}
-			</h2>
-			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-				<FeatureCard
-					emoji="🎯"
-					titleKey="home.instantEventCreationTitle"
-					descriptionKey="home.instantEventCreationDescription"
-				/>
-
-				<FeatureCard
-					emoji="🔗"
-					titleKey="home.oneClickSharingTitle"
-					descriptionKey="home.oneClickSharingDescription"
-				/>
-
-				<FeatureCard
-					emoji="🔍"
-					titleKey="home.allInOneClarityTitle"
-					descriptionKey="home.allInOneClarityDescription"
-				/>
-
-				<FeatureCard
-					emoji="👤"
-					titleKey="home.noHassleNoSignUpsTitle"
-					descriptionKey="home.noHassleNoSignUpsDescription"
-				/>
-
-				<FeatureCard
-					emoji="🛡️"
-					titleKey="home.smartLimitsTitle"
-					descriptionKey="home.smartLimitsDescription"
-				/>
-
-				<FeatureCard
-					emoji="✨"
-					titleKey="home.effortlessSimplicityTitle"
-					descriptionKey="home.effortlessSimplicityDescription"
-				/>
-
-				<FeatureCard
-					emoji="🎫"
-					titleKey="home.inviteLinksTitle"
-					descriptionKey="home.inviteLinksDescription"
-				/>
-
-				<FeatureCard
-					emoji="🌐"
-					titleKey="home.federationTitle"
-					descriptionKey="home.federationDescription"
-				/>
-			</div>
-		</div>
-	</section>
-
-	<!-- How It Works Section -->
-	<section class="py-20">
-		<div class="container mx-auto px-4">
-			<h2 class=" mb-16 text-center text-4xl font-bold">{t('home.howItWorksTitle')}</h2>
-
-			<div class="grid gap-8 md:grid-cols-3">
-				<!-- Step 1 -->
-				<div class="text-center">
-					<h3 class="mb-4 text-xl font-bold text-white">
-						<span class="text-violet-400">1.</span>
-						{t('home.step1Title')}
-					</h3>
-					<p class="">
-						{t('home.step1Description')}
-					</p>
-				</div>
-
-				<!-- Step 2 -->
-				<div class="text-center">
-					<h3 class="mb-4 text-xl font-bold text-white">
-						<span class="text-violet-400">2.</span>
-						{t('home.step2Title')}
-					</h3>
-					<p class="">
-						{t('home.step2Description')}
-					</p>
-				</div>
-
-				<!-- Step 3 -->
-				<div class="text-center">
-					<h3 class="mb-4 text-xl font-bold text-white">
-						<span class="text-violet-400">3.</span>
-						{t('home.step3Title')}
-					</h3>
-					<p class="">{t('home.step3Description')}</p>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- CTA Section -->
-	<section class="py-20">
-		<div class="container mx-auto px-4 text-center">
-			<h2 class="mb-6 text-4xl font-bold text-white">
-				{t('home.ctaTitle')}
-			</h2>
-			<p class="mb-10 text-xl">{t('home.ctaDescription')}</p>
-			<button
-				on:click={() => goto('/create')}
-				class="rounded-sm border-2 border-violet-500 px-8 py-4 font-bold duration-400 hover:scale-110 hover:bg-violet-500/10"
-			>
-				{t('home.ctaButton')}
-			</button>
 		</div>
 	</section>
 </div>
