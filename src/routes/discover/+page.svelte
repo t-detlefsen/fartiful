@@ -14,7 +14,7 @@
 	let searchQuery = '';
 	let selectedEventType: EventType | 'all' = 'all';
 	let selectedTimeFilter: 'any' | 'next-week' | 'next-month' = 'any';
-	let selectedTemporalStatus: 'all' | 'upcoming' | 'past' = 'all';
+	let selectedTemporalStatus: 'all' | 'upcoming' | 'past' = 'upcoming';
 	let selectedSortOrder: 'asc' | 'desc' = 'asc';
 	let showFilters = false;
 	let fuse: Fuse<Event>;
