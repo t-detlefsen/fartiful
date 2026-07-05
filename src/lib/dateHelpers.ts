@@ -15,7 +15,10 @@ export const formatTime = (timeString: string): string => {
 	const [hours, minutes] = timeString.split(':');
 	if (parseInt(hours) > 12) {
 		return `${parseInt(hours) - 12}:${minutes} PM`;
-	} else {
+	} if (parseInt(hours) == 0) {
+		return `${12}:${minutes} PM`;
+	}
+	else {
 		return `${hours}:${minutes} AM`;
 	}
 };
