@@ -8,12 +8,19 @@ export const formatDate = (dateString: string): string => {
 	const formattedYear = date.getFullYear();
 	const formattedMonth = String(date.getMonth() + 1).padStart(2, '0');
 	const formattedDay = String(date.getDate()).padStart(2, '0');
-	return `${formattedYear}/${formattedMonth}/${formattedDay}`;
+	return `${formattedMonth}/${formattedDay}/${formattedYear}`;
 };
 
 export const formatTime = (timeString: string): string => {
 	const [hours, minutes] = timeString.split(':');
-	return `${hours}:${minutes}`;
+	if (parseInt(hours) > 12) {
+		return `${parseInt(hours) - 12}:${minutes} PM`;
+	} if (parseInt(hours) == 0) {
+		return `${12}:${minutes} AM`;
+	}
+	else {
+		return `${hours}:${minutes} AM`;
+	}
 };
 
 // Helper function to check if an event is within a time range

@@ -19,7 +19,7 @@
 					on:click={() => goto('/')}
 					class="cursor-pointer text-2xl font-medium text-violet-400"
 				>
-					Cactoide
+					Fartiful
 				</button>
 			</div>
 
@@ -46,13 +46,6 @@
 					class={isActive('/create') ? 'text-violet-400' : 'cursor-pointer'}
 				>
 					{t('navigation.create')}
-				</button>
-
-				<button
-					on:click={() => goto('/instance')}
-					class={isActive('/instance') ? 'text-violet-400' : 'cursor-pointer'}
-				>
-					{t('navigation.instance')}
 				</button>
 
 				<button
