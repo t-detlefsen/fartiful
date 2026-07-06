@@ -1,13 +1,25 @@
+<!--
+TODO
+[X] Update rsvp in types.ts
+[X] Add options on form (RADIO BUTTON)
+[X] Connect options to database
+[X] Update database init.sql -> CREATE TABLE, seed.sql -> INSERT INTO
+[ ] Display on attendees list
+[ ] Create option for editing status
+-->
+
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import type { Event, RSVP } from '$lib/types';
+	import type { Event, RSVP} from '$lib/types';
+	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { formatTime, formatDate } from '$lib/dateHelpers.js';
 	import CalendarModal from '$lib/components/CalendarModal.svelte';
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
+	import { sql } from 'drizzle-orm';
 
 	export let data: { event: Event; rsvps: RSVP[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
@@ -16,6 +28,7 @@
 	let event: Event;
 	let rsvps: RSVP[] = [];
 	let newAttendeeName = '';
+	let newAttendeeStatus = RSVPStatus.yes;
 	let isAddingRSVP = false;
 	let error = '';
 	let success = ''; // TODO: change to boolean and refactor with 482-506
@@ -52,13 +65,14 @@
 
 	const handleFormSuccess = () => {
 		if (form?.type === 'add') {
-			success = 'RSVP added successfully!';
+			success = 'RSVP added successfully! ' + newAttendeeStatus;
 		} else {
 			success = 'RSVP removed successfully.';
 		}
 
 		error = '';
 		newAttendeeName = '';
+		newAttendeeStatus = RSVPStatus.yes;
 		addGuests = false;
 		numberOfGuests = 1;
 
@@ -284,6 +298,23 @@
 								/>
 							</div>
 
+							<!-- Add attendee status -->
+							{#each ["Yes", "No", "Maybe"] as attendeeStatus}
+								<label>
+									<input
+										type="radio"
+										name="attendeeStatus"
+										value={attendeeStatus}
+										bind:group={newAttendeeStatus}
+										class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+									/>
+
+									{attendeeStatus} {" "}
+								</label>
+							{/each}
+
+							<p>YOU PICKED {newAttendeeStatus}</p>
+
 							<!-- Add Guests Toggle -->
 							<div class="flex items-center space-x-3">
 								<input
@@ -385,7 +416,7 @@
 														? 'text-amber-300'
 														: ''}"
 												>
-													{attendee.name}
+													{attendee.name} {attendee.status}
 												</p>
 												<p class="text-xs text-violet-400">
 													{(() => {

@@ -59,6 +59,7 @@ export const rsvps = pgTable(
 			.notNull()
 			.references(() => events.id, { onDelete: 'cascade' }),
 		name: varchar('name', { length: 50 }).notNull(),
+		status: varchar('status', { length: 8 }).notNull(),
 		userId: varchar('user_id', { length: 100 }).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
 	},

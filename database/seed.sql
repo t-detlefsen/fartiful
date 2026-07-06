@@ -64,7 +64,7 @@ counts AS (
     END AS rsvp_count
   FROM ev
 )
-INSERT INTO rsvps (event_id, name, user_id, created_at, updated_at)
+INSERT INTO rsvps (event_id, name, user_id, status, created_at, updated_at)
 SELECT
   c.id AS event_id,
   'Attendee ' || c.id || '-' || g AS name,

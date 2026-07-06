@@ -21,10 +21,17 @@ export interface Event {
 	federation_url?: string; // Optional: URL of the federated instance this event came from
 }
 
+export enum RSVPStatus {
+	yes = "Yes",
+	maybe = "Maybe",
+	no = "No"
+}
+
 export interface RSVP {
 	id: string;
 	event_id: string;
 	name: string;
+	status: RSVPStatus;
 	user_id: string;
 	created_at: string;
 }
