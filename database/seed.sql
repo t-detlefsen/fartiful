@@ -70,6 +70,7 @@ SELECT
   'Attendee ' || c.id || '-' || g AS name,
   -- distribute user_ids across 200 synthetic users, deterministically mixed per event
   'user_' || ((ABS(HASHTEXT(c.id)) + g) % 200 + 1)::text AS user_id,
+  'Yes' as status,
   NOW(), NOW()
 FROM counts c
 JOIN LATERAL generate_series(1, c.rsvp_count) AS g ON TRUE;

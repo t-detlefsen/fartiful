@@ -2,7 +2,7 @@
 TODO
 [X] Update rsvp in types.ts
 [X] Add options on form (RADIO BUTTON)
-[X] Connect options to database
+[ ] Connect options to database
 [X] Update database init.sql -> CREATE TABLE, seed.sql -> INSERT INTO
 [ ] Display on attendees list
 [ ] Create option for editing status
@@ -15,7 +15,7 @@ TODO
 	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import { formatTime, formatDate } from '$lib/dateHelpers.js';
+	import { formatTime, formatDate, formatStatus } from '$lib/dateHelpers.js';
 	import CalendarModal from '$lib/components/CalendarModal.svelte';
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
@@ -299,21 +299,23 @@ TODO
 							</div>
 
 							<!-- Add attendee status -->
-							{#each ["Yes", "No", "Maybe"] as attendeeStatus}
-								<label>
+							<div>
+								<label for="attendeeStatus" class=" mb-2 block text-sm font-semibold">
+									<!-- {t('event.yourNameLabel')} -->
+									<!-- <span class="text-red-400">{t('common.required')}</span> -->
+								</label>
+								{#each ["Yes", "No", "Maybe"] as attendeeStatus}
 									<input
+										id="attendeeStatus"
+										name="newAttendeeStatus"
 										type="radio"
-										name="attendeeStatus"
 										value={attendeeStatus}
 										bind:group={newAttendeeStatus}
 										class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
 									/>
-
 									{attendeeStatus} {" "}
-								</label>
-							{/each}
-
-							<p>YOU PICKED {newAttendeeStatus}</p>
+								{/each}
+							</div>
 
 							<!-- Add Guests Toggle -->
 							<div class="flex items-center space-x-3">
@@ -416,7 +418,7 @@ TODO
 														? 'text-amber-300'
 														: ''}"
 												>
-													{attendee.name} {attendee.status}
+													 {attendee.name}
 												</p>
 												<p class="text-xs text-violet-400">
 													{(() => {
@@ -435,6 +437,12 @@ TODO
 												</p>
 											</div>
 										</div>
+										<div>
+												{(() => {
+													const status_format = formatStatus(attendee.status)
+													return status_format
+												})()}
+										
 
 										{#if attendee.user_id === currentUserId}
 											<form
@@ -473,6 +481,7 @@ TODO
 												</button>
 											</form>
 										{/if}
+										</div>
 									</div>
 								{/each}
 							</div>
