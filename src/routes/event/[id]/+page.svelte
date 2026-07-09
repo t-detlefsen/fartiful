@@ -15,7 +15,7 @@ TODO
 	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import { formatTime, formatDate, formatStatus } from '$lib/dateHelpers.js';
+	import { formatTime, formatDate, formatStatus, confirmedLength } from '$lib/dateHelpers.js';
 	import CalendarModal from '$lib/components/CalendarModal.svelte';
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
@@ -239,7 +239,7 @@ TODO
 								<div class="text-right">
 									<p class="text-sm">{t('common.capacity')}</p>
 									<p class=" text-lg font-bold">
-										{rsvps.length}/{event.attendee_limit}
+										{confirmedLength(rsvps)}/{event.attendee_limit}
 									</p>
 								</div>
 							{/if}
@@ -257,7 +257,7 @@ TODO
 							<p class="font-semibold text-amber-400">{t('event.inviteOnlyBannerTitle')}</p>
 							<p class="mt-1 text-sm text-amber-300">{t('common.inviteRequiredToDetails')}</p>
 						</div>
-					{:else if event.type === 'limited' && event.attendee_limit && rsvps.length >= event.attendee_limit}
+					{:else if event.type === 'limited' && event.attendee_limit && confirmedLength(rsvps) >= event.attendee_limit}
 						<div class="py-6 text-center">
 							<div class="mb-3 text-4xl text-red-400">🚫</div>
 							<p class="font-semibold text-red-400">{t('event.eventIsFull')}</p>
@@ -388,7 +388,7 @@ TODO
 					<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
 						<div class="mb-4 flex items-center justify-between">
 							<h3 class=" text-xl font-bold">{t('event.attendeesTitle')}</h3>
-							<span class="text-2xl font-bold">{rsvps.length}</span>
+							<span class="text-2xl font-bold">{confirmedLength(rsvps)}</span>
 						</div>
 
 						{#if rsvps.length === 0}
