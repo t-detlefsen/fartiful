@@ -1,13 +1,3 @@
-<!--
-TODO
-[X] Update rsvp in types.ts
-[X] Add options on form (RADIO BUTTON)
-[ ] Connect options to database
-[X] Update database init.sql -> CREATE TABLE, seed.sql -> INSERT INTO
-[ ] Display on attendees list
-[ ] Create option for editing status
--->
-
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
