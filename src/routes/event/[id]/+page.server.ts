@@ -57,6 +57,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 			id: rsvp.id,
 			event_id: rsvp.eventId,
 			name: rsvp.name,
+			status: rsvp.status,
 			user_id: rsvp.userId,
 			created_at: rsvp.createdAt?.toISOString() || new Date().toISOString()
 		}));
@@ -82,6 +83,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 
 		const name = formData.get('newAttendeeName') as string;
+		const status = formData.get('newAttendeeStatus') as string;
 		const numberOfGuests = parseInt(formData.get('numberOfGuests') as string) || 0;
 		const userId = cookies.get('cactoideUserId');
 
@@ -127,6 +129,7 @@ export const actions: Actions = {
 				{
 					eventId: eventId,
 					name: name.trim(),
+					status: status,
 					userId: userId,
 					createdAt: new Date()
 				}
@@ -137,6 +140,7 @@ export const actions: Actions = {
 				rsvpsToInsert.push({
 					eventId: eventId,
 					name: `${name.trim()}'s Guest #${i}`,
+					status: status,
 					userId: userId,
 					createdAt: new Date()
 				});

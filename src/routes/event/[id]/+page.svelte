@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import type { Event, RSVP } from '$lib/types';
+	import type { Event, RSVP} from '$lib/types';
+	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import { formatTime, formatDate } from '$lib/dateHelpers.js';
+	import { formatTime, formatDate, formatStatus, confirmedLength } from '$lib/dateHelpers.js';
 	import CalendarModal from '$lib/components/CalendarModal.svelte';
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
+	import { sql } from 'drizzle-orm';
 
 	export let data: { event: Event; rsvps: RSVP[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
@@ -16,6 +18,7 @@
 	let event: Event;
 	let rsvps: RSVP[] = [];
 	let newAttendeeName = '';
+	let newAttendeeStatus = RSVPStatus.yes;
 	let isAddingRSVP = false;
 	let error = '';
 	let success = ''; // TODO: change to boolean and refactor with 482-506
@@ -52,13 +55,14 @@
 
 	const handleFormSuccess = () => {
 		if (form?.type === 'add') {
-			success = 'RSVP added successfully!';
+			success = 'RSVP added successfully! '
 		} else {
 			success = 'RSVP removed successfully.';
 		}
 
 		error = '';
 		newAttendeeName = '';
+		newAttendeeStatus = RSVPStatus.yes;
 		addGuests = false;
 		numberOfGuests = 1;
 
@@ -225,7 +229,7 @@
 								<div class="text-right">
 									<p class="text-sm">{t('common.capacity')}</p>
 									<p class=" text-lg font-bold">
-										{rsvps.length}/{event.attendee_limit}
+										{confirmedLength(rsvps)}/{event.attendee_limit}
 									</p>
 								</div>
 							{/if}
@@ -243,7 +247,7 @@
 							<p class="font-semibold text-amber-400">{t('event.inviteOnlyBannerTitle')}</p>
 							<p class="mt-1 text-sm text-amber-300">{t('common.inviteRequiredToDetails')}</p>
 						</div>
-					{:else if event.type === 'limited' && event.attendee_limit && rsvps.length >= event.attendee_limit}
+					{:else if event.type === 'limited' && event.attendee_limit && confirmedLength(rsvps) >= event.attendee_limit}
 						<div class="py-6 text-center">
 							<div class="mb-3 text-4xl text-red-400">🚫</div>
 							<p class="font-semibold text-red-400">{t('event.eventIsFull')}</p>
@@ -282,6 +286,25 @@
 									maxlength="50"
 									required
 								/>
+							</div>
+
+							<!-- Add attendee status -->
+							<div>
+								<label for="attendeeStatus" class=" mb-2 block text-sm font-semibold">
+									<!-- {t('event.yourNameLabel')} -->
+									<!-- <span class="text-red-400">{t('common.required')}</span> -->
+								</label>
+								{#each ["Yes", "No", "Maybe"] as attendeeStatus}
+									<input
+										id="attendeeStatus"
+										name="newAttendeeStatus"
+										type="radio"
+										value={attendeeStatus}
+										bind:group={newAttendeeStatus}
+										class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+									/>
+									{attendeeStatus} {" "}
+								{/each}
 							</div>
 
 							<!-- Add Guests Toggle -->
@@ -355,7 +378,7 @@
 					<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
 						<div class="mb-4 flex items-center justify-between">
 							<h3 class=" text-xl font-bold">{t('event.attendeesTitle')}</h3>
-							<span class="text-2xl font-bold">{rsvps.length}</span>
+							<span class="text-2xl font-bold">{confirmedLength(rsvps)}</span>
 						</div>
 
 						{#if rsvps.length === 0}
@@ -385,7 +408,7 @@
 														? 'text-amber-300'
 														: ''}"
 												>
-													{attendee.name}
+													 {attendee.name}
 												</p>
 												<p class="text-xs text-violet-400">
 													{(() => {
@@ -404,6 +427,12 @@
 												</p>
 											</div>
 										</div>
+										<div>
+												{(() => {
+													const status_format = formatStatus(attendee.status)
+													return status_format
+												})()}
+										
 
 										{#if attendee.user_id === currentUserId}
 											<form
@@ -442,6 +471,7 @@
 												</button>
 											</form>
 										{/if}
+										</div>
 									</div>
 								{/each}
 							</div>

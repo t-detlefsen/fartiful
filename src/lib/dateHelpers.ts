@@ -1,4 +1,5 @@
-import type { Event } from './types';
+import type { Event, RSVP } from './types';
+import { RSVPStatus } from '$lib/types';
 
 export const formatDate = (dateString: string): string => {
 	// Parse the date string as local date to avoid timezone issues
@@ -22,6 +23,17 @@ export const formatTime = (timeString: string): string => {
 		return `${hours}:${minutes} AM`;
 	}
 };
+
+export const formatStatus = (statusString: string): string => {
+	if (statusString == RSVPStatus.yes) {return "✅";}
+	if (statusString == RSVPStatus.maybe) {return "🤔";}
+	if (statusString == RSVPStatus.no) {return "❌";}
+	else {return "ERROR"}
+}
+
+export const confirmedLength = (rsvps: RSVP[]): number => {
+	return rsvps.filter((rsvp) => rsvp.status == RSVPStatus.yes).length;
+}
 
 // Helper function to check if an event is within a time range
 export const isEventInTimeRange = (event: Event, timeFilter: string): boolean => {
