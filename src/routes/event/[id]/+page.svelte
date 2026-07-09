@@ -65,7 +65,7 @@ TODO
 
 	const handleFormSuccess = () => {
 		if (form?.type === 'add') {
-			success = 'RSVP added successfully! ' + newAttendeeStatus;
+			success = 'RSVP added successfully! '
 		} else {
 			success = 'RSVP removed successfully.';
 		}
