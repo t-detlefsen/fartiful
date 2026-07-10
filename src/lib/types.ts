@@ -6,6 +6,7 @@ export type LocationType = 'none' | 'text' | 'maps';
 export interface Event {
 	id: string;
 	name: string;
+	description: string;
 	date: string;
 	time: string;
 	location: string;
@@ -38,6 +39,7 @@ export interface RSVP {
 
 export interface CreateEventData {
 	name: string;
+	description: string;
 	date: string;
 	time: string;
 	location: string;
@@ -51,6 +53,7 @@ export interface CreateEventData {
 export interface DatabaseEvent {
 	id: string;
 	name: string;
+	description: string;
 	date: string;
 	time: string;
 	location: string;
@@ -68,6 +71,7 @@ export interface DatabaseRSVP {
 	id: string;
 	event_id: string;
 	name: string;
+	status: string;
 	user_id: string;
 	created_at: string;
 }

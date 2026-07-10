@@ -23,6 +23,9 @@ to_insert AS (
     -- Make varied names by mixing a theme and city
     (SELECT themes[(gs % array_length(themes,1)) + 1] FROM params) || ' @ ' ||
     (SELECT cities[(gs % array_length(cities,1)) + 1] FROM params)                 AS name,
+    -- Make varied names by mixing a theme and city
+    'A ' || (SELECT themes[(gs % array_length(themes,1)) + 1] FROM params) ||
+    ' in ' || (SELECT cities[(gs % array_length(cities,1)) + 1] FROM params)       AS description,
     -- Spread dates across past and future (centered around today)
     (CURRENT_DATE + (gs - 50))::date                                               AS date,
     -- Varied times: between 08:00 and 19:xx
@@ -40,8 +43,8 @@ to_insert AS (
     CASE WHEN gs % 3 = 0 THEN 'private' ELSE 'public' END                          AS visibility
   FROM generate_series(1, 100) AS gs
 )
-INSERT INTO events (id, name, date, time, location, type, attendee_limit, user_id, visibility, created_at, updated_at)
-SELECT id, name, date, time, location, type, attendee_limit, user_id, visibility, NOW(), NOW()
+INSERT INTO events (id, name, description, date, time, location, type, attendee_limit, user_id, visibility, created_at, updated_at)
+SELECT id, name, description, date, time, location, type, attendee_limit, user_id, visibility, NOW(), NOW()
 FROM to_insert;
 
 -- -----------------------------
