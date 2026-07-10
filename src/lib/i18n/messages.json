@@ -130,8 +130,6 @@
 		"formTitle": "Create New Event",
 		"eventNameLabel": "Name",
 		"eventNamePlaceholder": "Enter event name",
-		"eventDescriptionLabel": "Description",
-		"eventDescriptionPlaceholder": "Enter event description",
 		"dateLabel": "Date",
 		"timeLabel": "Time",
 		"locationLabel": "Location",

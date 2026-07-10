@@ -73,7 +73,6 @@ export const actions: Actions = {
 		}
 
 		const name = formData.get('name') as string;
-		const description = formData.get('description') as string;
 		const date = formData.get('date') as string;
 		const time = formData.get('time') as string;
 		const location = formData.get('location') as string;
@@ -98,7 +97,6 @@ export const actions: Actions = {
 				error: `Missing or empty fields: ${missingFields.join(', ')}`,
 				values: {
 					name,
-					description,
 					date,
 					time,
 					location,
@@ -122,7 +120,6 @@ export const actions: Actions = {
 				error: 'Date cannot be in the past.',
 				values: {
 					name,
-					description,
 					date,
 					time,
 					location,
@@ -140,7 +137,6 @@ export const actions: Actions = {
 				error: 'Limit must be at least 2 for limited events.',
 				values: {
 					name,
-					description,
 					date,
 					time,
 					location,
@@ -157,7 +153,6 @@ export const actions: Actions = {
 			.update(events)
 			.set({
 				name: name.trim(),
-				description: description,
 				date: date,
 				time: time,
 				location: location?.trim() || '',
