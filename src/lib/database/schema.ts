@@ -25,6 +25,7 @@ export const events = pgTable(
 	{
 		id: varchar('id', { length: 8 }).primaryKey(),
 		name: varchar('name', { length: 100 }).notNull(),
+		description: varchar('description', { length: 240 }).notNull(),
 		date: date('date', { mode: 'string' }).notNull(), // ISO 'YYYY-MM-DD'
 		time: time('time', { withTimezone: false }).notNull(), // 'HH:MM:SS'
 		location: varchar('location', { length: 200 }).notNull(),

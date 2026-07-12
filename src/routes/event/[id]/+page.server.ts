@@ -40,6 +40,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 		const transformedEvent = {
 			id: event.id,
 			name: event.name,
+			description: event.description,
 			date: event.date,
 			time: event.time,
 			location: event.location,

@@ -11,6 +11,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto; -- for gen_random_uuid()
 CREATE TABLE IF NOT EXISTS events (
     id              VARCHAR(8) PRIMARY KEY,
     name            VARCHAR(100) NOT NULL,
+    description     VARCHAR(240),
     date            DATE NOT NULL,
     time            TIME NOT NULL,
     location        VARCHAR(200) NOT NULL,
