@@ -6,7 +6,7 @@ BEGIN;
 
 -- SELECT description FROM events;
 
-ALTER TABLE rsvps
+ALTER TABLE events
 ADD description VARCHAR(240);
 
 COMMIT;
