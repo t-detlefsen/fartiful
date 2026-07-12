@@ -8,6 +8,7 @@
 
 	let eventData: CreateEventData = {
 		name: '',
+		description: '',
 		date: '',
 		time: '',
 		location: '',
@@ -259,6 +260,21 @@
 						</div>
 					{/if}
 
+					<!-- Event Description -->
+					<div>
+						<label for="description" class="text-dark-800 mb-3 block text-sm font-semibold">
+							{t('create.eventDescriptionLabel')}
+						</label>
+						<textarea 
+							id="description"
+							name="description"
+							bind:value={eventData.description}
+							class="border-dark-300 w-full rounded-sm border-2 px-4 py-3 text-slate-900 shadow-sm"
+							placeholder="{t('create.eventDescriptionPlaceholder')}"
+							maxlength="240">
+						</textarea>
+					</div>
+					
 					<!-- Event Type -->
 					<div>
 						<fieldset>

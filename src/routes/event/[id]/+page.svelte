@@ -148,6 +148,16 @@
 					</h2>
 
 					<div class="space-y-4">
+						
+						<!-- Event Description -->
+						{#if event.description != 'none'}
+							<div class="text-center break-all">
+								<p class="text-xs text-white">
+									{event.description}
+								</p>
+							</div>
+						{/if}
+
 						<!-- Date & Time -->
 						<div class="flex items-center space-x-3 text-violet-400">
 							<div class="flex h-8 w-8 items-center justify-center rounded-sm">
