@@ -1,3 +1,12 @@
+<!-- TODO
+[ ] Upload Multiple Photos
+[ ] Remove metadata
+[ ] Store on Server
+[ ] Store in DB w/ currentUserID
+[X] Display on Page
+[ ] Allow removal by user in DB
+-->
+
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
@@ -10,6 +19,8 @@
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
 	import { sql } from 'drizzle-orm';
+	import { images } from '../../imageData.js'; // TODO: Remove
+	import Slide from '../../slide.svelte'; // TODO: Fix path
 
 	export let data: { event: Event; rsvps: RSVP[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
@@ -29,6 +40,11 @@
 	let toastType: 'add' | 'remove' | 'copy' | null = null;
 	let typeToShow: 'add' | 'remove' | 'copy' | undefined;
 	let successHideTimer: number | null = null;
+
+	// TODO: Setup Images
+	let imageShowingIndex = 0;
+	$: console.log(imageShowingIndex);
+	$: image = images[imageShowingIndex];
 
 	// Use server-side data
 	$: event = data.event;
@@ -114,6 +130,22 @@
 	const closeCalendarModal = () => {
 		showCalendarModal = false;
 	};
+
+	const nextSlide = () => {
+		if (imageShowingIndex === images.length-1) {
+			imageShowingIndex = 0;
+		} else {
+			imageShowingIndex += 1;
+		}
+	}
+	
+	const prevSlide = () => {
+		if (imageShowingIndex === 0) {
+			imageShowingIndex = images.length-1;
+		} else {
+			imageShowingIndex -= 1;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -509,6 +541,32 @@
 						{t('event.addToCalendarButton')}
 					</button>
 				</div>
+
+				<!-- Event Photos -->
+				<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
+						<div class="mb-4 flex items-center justify-between">
+							<h3 class=" text-xl font-bold">{t('event.photosTitle')}</h3>
+							<span class="text-2xl font-bold">{imageShowingIndex + 1} / {images.length}</span> <!-- TODO: Reference photos table -->
+						</div>
+
+						<!-- {#if rsvps.length === 0} TODO: Reference photos table -->
+						{#if false}
+							<div class="text-dark-400 py-8 text-center">
+								<p>{t('event.noPhotosYet')}</p>
+							</div>
+						{:else}
+							<div class="container">
+								<Slide image={image.imgurl} 
+										altTag={image.name} 
+										attr={image.attribution} 
+										slideNo={image.id+1} 
+										totalSlides={images.length} 
+										on:prevClick={prevSlide}
+										on:nextClick={nextSlide}
+										/>
+							</div>
+						{/if}
+					</div>
 			</div>
 		{/if}
 	</div>
