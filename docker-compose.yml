@@ -13,6 +13,7 @@ services:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - image_data:/var/lib/uploads/images
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test:
@@ -51,6 +52,7 @@ services:
 
 volumes:
   postgres_data:
+  image_data:
 
 networks:
   cactoide-network:
