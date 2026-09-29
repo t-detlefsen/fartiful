@@ -92,12 +92,35 @@ export const inviteTokens = pgTable(
 	})
 );
 
+// --- Media table
+export const media = pgTable(
+	'media',
+	{
+		id: uuid('id').defaultRandom().primaryKey(), // gen_random_uuid()
+		eventId: varchar('event_id', { length: 8 })
+			.notNull()
+			.references(() => events.id, { onDelete: 'cascade' }),
+		userId: varchar('user_id', { length: 100 }).notNull(),
+		filename: varchar('filename', { length: 50 }).notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
+	},
+	(t) => ({
+		idxMediaEventId: index('idx_media_event_id').on(t.eventId),
+		idxMediaUserId: index('idx_media_user_id').on(t.userId),
+		idxMediaFilename: index('idx_media_filename').on(t.filename),
+		idxMediaCreatedAt: index('idx_media_created_at').on(t.createdAt),
+		// UNIQUE(event_id, name) constraint
+		uqEventName: uniqueIndex('rsvps_media_id_name_unique').on(t.eventId, t.filename)
+	})
+);
+
 // --- Relations (optional but handy for type safety)
 import { relations } from 'drizzle-orm';
 
 export const eventsRelations = relations(events, ({ many }) => ({
 	rsvps: many(rsvps),
-	inviteTokens: many(inviteTokens)
+	inviteTokens: many(inviteTokens),
+	media: many(media)
 }));
 
 export const rsvpsRelations = relations(rsvps, ({ one }) => ({
@@ -114,6 +137,13 @@ export const inviteTokensRelations = relations(inviteTokens, ({ one }) => ({
 	})
 }));
 
+export const mediaRelations = relations(media, ({ one }) => ({
+	event: one(events, {
+		fields: [media.eventId],
+		references: [events.id]
+	})
+}));
+
 // --- Inferred types for use in the application
 export type Event = InferSelectModel<typeof events>;
 export type NewEvent = InferInsertModel<typeof events>;
@@ -121,6 +151,8 @@ export type Rsvp = InferSelectModel<typeof rsvps>;
 export type NewRsvp = InferInsertModel<typeof rsvps>;
 export type InviteToken = InferSelectModel<typeof inviteTokens>;
 export type NewInviteToken = InferInsertModel<typeof inviteTokens>;
+export type Media = InferSelectModel<typeof media>;
+export type NewMedia = InferSelectModel<typeof media>;
 
 // --- Additional utility types
 export type EventWithRsvps = Event & {
@@ -131,6 +163,11 @@ export type EventWithInviteTokens = Event & {
 	inviteTokens: InviteToken[];
 };
 
+export type EventWithMedia = Event & {
+	media: Media[];
+}
+
 export type CreateEventData = Omit<NewEvent, 'id' | 'createdAt' | 'updatedAt'>;
 export type CreateRsvpData = Omit<NewRsvp, 'id' | 'createdAt'>;
 export type CreateInviteTokenData = Omit<NewInviteToken, 'id' | 'createdAt'>;
+export type CreateMediaData = Omit<NewMedia, 'id' | 'createdAt'>;

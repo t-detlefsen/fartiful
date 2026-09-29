@@ -44,7 +44,7 @@ to_insert AS (
   FROM generate_series(1, 100) AS gs
 )
 INSERT INTO events (id, name, description, date, time, location, type, attendee_limit, user_id, visibility, created_at, updated_at)
-SELECT id, name, description, date, time, location, 
+SELECT id, name, description, date, time, location, type, attendee_limit, user_id, visibility, NOW(), NOW()
 FROM to_insert;
 
 -- -----------------------------

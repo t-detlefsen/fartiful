@@ -83,3 +83,11 @@ export interface InviteToken {
 	expires_at: string;
 	created_at: string;
 }
+
+export interface Media {
+	id: string;
+	event_id: string;
+	user_id: string;
+	filename: string;
+	created_at: string;
+}

@@ -1,16 +1,7 @@
-<!-- TODO
-[ ] Upload Multiple Photos
-[ ] Remove metadata
-[ ] Store on Server
-[ ] Store in DB w/ currentUserID
-[X] Display on Page
-[ ] Allow removal by user in DB
--->
-
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import type { Event, RSVP} from '$lib/types';
+	import type { Event, RSVP, Media} from '$lib/types';
 	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -22,12 +13,13 @@
 	import { images } from '../../imageData.js'; // TODO: Remove
 	import Slide from '../../slide.svelte'; // TODO: Fix path
 
-	export let data: { event: Event; rsvps: RSVP[]; userId: string };
+	export let data: { event: Event; rsvps: RSVP[]; media: Media[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
 	export let form: FormDataLocal | undefined;
 
 	let event: Event;
 	let rsvps: RSVP[] = [];
+	let media: Media[] = [];
 	let newAttendeeName = '';
 	let newAttendeeStatus = RSVPStatus.yes;
 	let isAddingRSVP = false;
@@ -49,6 +41,7 @@
 	// Use server-side data
 	$: event = data.event;
 	$: rsvps = data.rsvps;
+	$: media = data.media;
 	$: currentUserId = data.userId;
 	$: isEventCreator = event.user_id === currentUserId;
 
@@ -132,7 +125,7 @@
 	};
 
 	const nextSlide = () => {
-		if (imageShowingIndex === images.length-1) {
+		if (imageShowingIndex === media.length-1) {
 			imageShowingIndex = 0;
 		} else {
 			imageShowingIndex += 1;
@@ -141,7 +134,7 @@
 	
 	const prevSlide = () => {
 		if (imageShowingIndex === 0) {
-			imageShowingIndex = images.length-1;
+			imageShowingIndex = media.length-1;
 		} else {
 			imageShowingIndex -= 1;
 		}
@@ -546,21 +539,23 @@
 				<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
 						<div class="mb-4 flex items-center justify-between">
 							<h3 class=" text-xl font-bold">{t('event.photosTitle')}</h3>
-							<span class="text-2xl font-bold">{imageShowingIndex + 1} / {images.length}</span> <!-- TODO: Reference photos table -->
+							{#if media.length != 0}
+								<span class="text-2xl font-bold">{imageShowingIndex + 1} / {media.length}</span>
+							{/if}
 						</div>
 
-						<!-- {#if rsvps.length === 0} TODO: Reference photos table -->
-						{#if false}
+						{#if media.length === 0}
 							<div class="text-dark-400 py-8 text-center">
 								<p>{t('event.noPhotosYet')}</p>
 							</div>
 						{:else}
 							<div class="container">
-								<Slide image={image.imgurl} 
-										altTag={image.name} 
-										attr={image.attribution} 
-										slideNo={image.id+1} 
-										totalSlides={images.length} 
+								<!-- Link attribute to actual user name from event (if available) -->
+								<Slide image={`/api/media?id=${media[imageShowingIndex].id}`} 
+										altTag={'TODO'} 
+										attr={'TODO'} 
+										slideNo={imageShowingIndex} 
+										totalSlides={media.length} 
 										on:prevClick={prevSlide}
 										on:nextClick={nextSlide}
 										/>

@@ -28,6 +28,7 @@ help:
 	@echo "  format          - Format the project"
 	@echo "  migrate-up      - Apply invite-only events migration"
 	@echo "  migrate-down    - Rollback invite-only events migration"
+	@echo "  debug           - Run custom DB command via debug.sql"
 
 # Apply invite-only events migration
 migrate-up:
@@ -54,7 +55,12 @@ migrate-down:
 # Build the Docker images
 build:
 	@echo "Building Docker images..."
-	docker compose build
+	docker build \
+	  --build-arg LOG_PRETTY=${LOG_PRETTY:-true} \
+	  --build-arg LOG_LEVEL=${LOG_LEVEL:-trace} \
+      --build-arg PUBLIC_LANDING_INFO=${PUBLIC_LANDING_INFO:-true} \
+	  --build-arg FEDERATION_INSTANCE=${FEDERATION_INSTANCE:-true} \
+	  -t cactoide-custom .
 
 # Start all services
 up:
@@ -113,3 +119,14 @@ i18n:
 		exit 1; \
 	fi
 	@./scripts/i18n-check.sh --missing-only $(FILE)
+
+# Seed the database with sample data
+debug:
+	@echo "Running debug.sql..."
+	@if [ -f "database/debug.sql" ]; then \
+		psql "$(DB_URL)" -f database/debug.sql && \
+		echo "debug.sql executed successfully!"; \
+	else \
+		echo "Seed file not found: database/debug.sql"; \
+		exit 1; \
+	fi
