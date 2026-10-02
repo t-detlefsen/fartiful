@@ -157,6 +157,23 @@
 			uploadInput.value = '';
 		}
 	}
+
+	$: currentMedia = media[imageShowingIndex];
+
+	$: currentMediaAttribute = (() => {
+		if (!currentMedia) return '';
+
+		// Prefer the attendee's primary RSVP over a guest entry.
+		const attendee =
+			rsvps.find(
+				(attendee) =>
+					attendee.user_id === currentMedia.user_id &&
+					!attendee.name.includes("'s Guest")
+			) ??
+			rsvps.find((attendee) => attendee.user_id === currentMedia.user_id);
+
+		return attendee?.name ?? '';
+	})();
 </script>
 
 <svelte:head>
@@ -567,7 +584,8 @@
 							<div class="container">
 								<!-- Link attribute to actual user name from event (if available) -->
 								<Slide image={`/api/media?id=${media[imageShowingIndex].id}`} 
-										altTag={'TODO'} 
+										altTag={`${currentMediaAttribute}'s Photo'`} 
+										attribute={currentMediaAttribute}
 										slideNo={imageShowingIndex} 
 										totalSlides={media.length}
 										canDelete={canDeleteCurrentImage}

@@ -17,8 +17,13 @@ BEGIN;
 --     created_at  TIMESTAMPTZ DEFAULT NOW()
 -- );
 
--- -- Insert toy value
--- INSERT INTO media (event_id, filename, user_id)
--- VALUES ('mYqYVMTe', 'IMG_6641.JPG', 'bob');
+-- Insert toy value
+INSERT INTO media (event_id, filename, user_id)
+VALUES ('mYqYVMTe', 'IMG_6642.JPG', 'user_1790591757875_ljt5c2dmy');
+
+-- -- Update Record
+-- UPDATE media
+-- SET user_id = 'user_1790591757875_ljt5c2dmy'
+-- WHERE filename = '1000138143.jpg';
 
 COMMIT;
