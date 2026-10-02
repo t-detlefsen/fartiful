@@ -139,6 +139,24 @@
 			imageShowingIndex -= 1;
 		}
 	}
+
+	let uploadInput;
+	let selectedFiles = [];
+
+	// Temporary design state; replace with your real authorization state later.
+	let canDeleteCurrentImage = true;
+
+	function handleFileSelection(event) {
+		selectedFiles = Array.from(event.currentTarget.files || []);
+	}
+
+	function clearSelectedFiles() {
+		selectedFiles = [];
+
+		if (uploadInput) {
+			uploadInput.value = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -539,9 +557,6 @@
 				<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
 						<div class="mb-4 flex items-center justify-between">
 							<h3 class=" text-xl font-bold">{t('event.photosTitle')}</h3>
-							{#if media.length != 0}
-								<span class="text-2xl font-bold">{imageShowingIndex + 1} / {media.length}</span>
-							{/if}
 						</div>
 
 						{#if media.length === 0}
@@ -553,14 +568,94 @@
 								<!-- Link attribute to actual user name from event (if available) -->
 								<Slide image={`/api/media?id=${media[imageShowingIndex].id}`} 
 										altTag={'TODO'} 
-										attr={'TODO'} 
 										slideNo={imageShowingIndex} 
-										totalSlides={media.length} 
+										totalSlides={media.length}
+										canDelete={canDeleteCurrentImage}
 										on:prevClick={prevSlide}
 										on:nextClick={nextSlide}
 										/>
 							</div>
 						{/if}
+						<div class="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<input
+								bind:this={uploadInput}
+								id="event-photo-upload"
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								multiple
+								class="hidden"
+								on:change={handleFileSelection}
+							/>
+
+							<!-- Add photos and selected count -->
+							<div class="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-start">
+								<label
+									for="event-photo-upload"
+									class="inline-flex shrink-0 cursor-pointer items-center rounded-sm border border-violet-500 bg-violet-400/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-400/50"
+								>
+									<span class="mr-2 text-lg leading-none">+</span>
+									Add photos
+								</label>
+
+								{#if selectedFiles.length > 0}
+									<span class="whitespace-nowrap text-xs text-violet-300">
+										{selectedFiles.length} selected
+									</span>
+								{/if}
+							</div>
+
+							{#if selectedFiles.length > 0}
+								<!-- Mobile: second line, full width -->
+								<!-- Desktop: same line, right aligned -->
+								<div class="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
+									<button
+										type="button"
+										title={`Upload ${selectedFiles.length} selected images`}
+										aria-label={`Upload ${selectedFiles.length} selected images`}
+										class="flex h-10 w-10 items-center justify-center rounded-sm border border-teal-400 bg-teal-400/20 text-teal-200 transition hover:bg-teal-400/40"
+									>
+										<svg
+											class="h-5 w-5"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+											aria-hidden="true"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"
+											/>
+										</svg>
+									</button>
+
+									<button
+										type="button"
+										title="Cancel photo selection"
+										aria-label="Cancel photo selection"
+										on:click={clearSelectedFiles}
+										class="flex h-10 w-10 items-center justify-center rounded-sm border border-gray-400/60 bg-gray-400/10 text-gray-200 transition hover:bg-gray-400/25"
+									>
+										<svg
+											class="h-5 w-5"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+											aria-hidden="true"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M6 6l12 12M18 6L6 18"
+											/>
+										</svg>
+									</button>
+								</div>
+							{/if}
+						</div>
+
 					</div>
 			</div>
 		{/if}
