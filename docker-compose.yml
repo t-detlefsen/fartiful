@@ -43,6 +43,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-trace}
       PUBLIC_LANDING_INFO: ${PUBLIC_LANDING_INFO:-true}
       FEDERATION_INSTANCE: ${FEDERATION_INSTANCE:-true}
+      BODY_SIZE_LIMIT: 12M
+      MEDIA_ROOT: /app/media
     depends_on:
       postgres:
         condition: service_healthy

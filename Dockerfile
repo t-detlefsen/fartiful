@@ -2,6 +2,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 
+ENV MEDIA_ROOT=/app/media
+
 RUN npm ci
 
 ARG PUBLIC_LANDING_INFO

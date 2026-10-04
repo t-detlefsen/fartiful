@@ -3,6 +3,7 @@ import type { Handle } from '@sveltejs/kit';
 import { generateUserId } from '$lib/generateUserId.js';
 import { ensureDatabaseConnection } from '$lib/database/healthCheck';
 import { logger } from '$lib/logger';
+import { dev } from '$app/environment';
 
 // Global flag to track if database health check has been performed
 let dbHealthCheckPerformed = false;
@@ -35,7 +36,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (!cactoideUserId) {
 		logger.debug({ userId }, 'No cactoideUserId cookie found, generating new one');
-		event.cookies.set('cactoideUserId', userId, { path: PATH, maxAge: MAX_AGE });
+		event.cookies.set('cactoideUserId', userId, {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: !dev,
+			maxAge: 60 * 60 * 24 * 365
+		});
 	} else {
 		logger.debug({ cactoideUserId }, 'cactoideUserId cookie found, using existing one');
 	}
