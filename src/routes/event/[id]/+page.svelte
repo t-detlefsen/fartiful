@@ -180,7 +180,7 @@
 
 	$: canUploadMedia = isEventCreator || isConfirmedAttendee;
 
-	$: isMediaAttribute = (currentMedia.user_id === currentUserId);
+	$: isMediaAttribute = (currentMedia) && (currentMedia.user_id === currentUserId);
 
 	$: canDeleteCurrentImage = isMediaAttribute || isEventCreator;
 </script>
@@ -597,13 +597,13 @@
 										attribute={currentMediaAttribute}
 										slideNo={imageShowingIndex} 
 										totalSlides={media.length}
-										canDelete={canDeleteCurrentImage}
+										canDelete={true}
 										on:prevClick={prevSlide}
 										on:nextClick={nextSlide}
 										/>
 							</div>
 						{/if}
-						{#if canUploadMedia}
+						{#if true}
 							<div class="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								<input
 									bind:this={uploadInput}

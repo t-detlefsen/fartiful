@@ -5,8 +5,8 @@ BEGIN;
 -- from information_schema.columns
 -- where table_name = 'media';
 
--- List specified column contents
-SELECT filename FROM media;
+-- -- List specified column contents
+-- SELECT event_id, user_id FROM rsvps;
 
 -- -- Create media table
 -- CREATE TABLE IF NOT EXISTS media (
@@ -17,9 +17,9 @@ SELECT filename FROM media;
 --     created_at  TIMESTAMPTZ DEFAULT NOW()
 -- );
 
--- -- Insert toy value
--- INSERT INTO media (event_id, filename, user_id)
--- VALUES ('mYqYVMTe', 'IMG_6642.JPG', 'user_1790591757875_ljt5c2dmy');
+-- Insert toy value
+INSERT INTO rsvps (event_id, user_id, name)
+VALUES ('sqodG2ev', 'user_1790591757875_ljt5c2dmy', 'TOM');
 
 -- -- Update Record
 -- UPDATE media
