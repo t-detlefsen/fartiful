@@ -38,6 +38,8 @@ export const POST = async ({
 	// Browsers normally send Origin on fetch POST requests.
 	const origin = request.headers.get('origin');
 
+	console.log(url.origin)
+	console.log(origin)
 	if (origin && origin !== url.origin) {
 		return errorResponse('Invalid request origin', 403);
 	}

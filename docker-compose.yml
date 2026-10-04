@@ -45,6 +45,7 @@ services:
       FEDERATION_INSTANCE: ${FEDERATION_INSTANCE:-true}
       BODY_SIZE_LIMIT: 12M
       MEDIA_ROOT: /app/media
+      ORIGIN: http://localhost:5173
     depends_on:
       postgres:
         condition: service_healthy

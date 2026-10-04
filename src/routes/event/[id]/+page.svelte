@@ -12,6 +12,7 @@
 	import { sql } from 'drizzle-orm';
 	import { images } from '../../imageData.js'; // TODO: Remove
 	import Slide from '../../slide.svelte'; // TODO: Fix path
+	import { invalidateAll } from '$app/navigation';
 
 	export let data: { event: Event; rsvps: RSVP[]; media: Media[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
@@ -140,11 +141,16 @@
 		}
 	}
 
-	let uploadInput;
-	let selectedFiles = [];
+	let uploadInput: HTMLInputElement;
+	let selectedFiles: File[] = [];
+	let isUploading = false;
+	let uploadError = '';
 
 	function handleFileSelection(event) {
-		selectedFiles = Array.from(event.currentTarget.files || []);
+		const input = event.currentTarget as HTMLInputElement;
+
+		selectedFiles = Array.from(input.files ?? []);
+		uploadError = '';
 	}
 
 	function clearSelectedFiles() {
@@ -152,6 +158,45 @@
 
 		if (uploadInput) {
 			uploadInput.value = '';
+		}
+	}
+
+	async function uploadSelectedFiles() {
+		if (selectedFiles.length === 0 || isUploading) {
+			return;
+		}
+
+		isUploading = true;
+		uploadError = '';
+
+		const formData = new FormData();
+
+		for (const file of selectedFiles) {
+			formData.append('files', file, file.name);
+		}
+
+		try {
+			const response = await fetch(`/api/event/${eventId}/media`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'same-origin'
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error ?? 'Failed to upload photos');
+			}
+
+			// Re-run the page's load function, including the media query.
+			await invalidateAll();
+
+			clearSelectedFiles();
+			imageShowingIndex = 0;
+		} catch (error) {
+			uploadError = error instanceof Error ? error.message : 'Failed to upload photos';
+		} finally {
+			isUploading = false;
 		}
 	}
 
@@ -638,24 +683,34 @@
 									<div class="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
 										<button
 											type="button"
-											title={`Upload ${selectedFiles.length} selected images`}
-											aria-label={`Upload ${selectedFiles.length} selected images`}
-											class="flex h-10 w-10 items-center justify-center rounded-sm border border-teal-400 bg-teal-400/20 text-teal-200 transition hover:bg-teal-400/40"
+											title={isUploading
+												? 'Uploading photos'
+												: `Upload ${selectedFiles.length} selected images`}
+											aria-label={isUploading
+												? 'Uploading photos'
+												: `Upload ${selectedFiles.length} selected images`}
+											disabled={isUploading}
+											on:click={uploadSelectedFiles}
+											class="flex h-10 w-10 items-center justify-center rounded-sm border border-teal-400 bg-teal-400/20 text-teal-200 transition hover:bg-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50"
 										>
-											<svg
-												class="h-5 w-5"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-												aria-hidden="true"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"
-												/>
-											</svg>
+											{#if isUploading}
+												<span class="text-xs">...</span>
+											{:else}
+												<svg
+													class="h-5 w-5"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+													aria-hidden="true"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"
+													/>
+												</svg>
+											{/if}
 										</button>
 
 										<button
@@ -681,6 +736,11 @@
 											</svg>
 										</button>
 									</div>
+								{/if}
+								{#if uploadError}
+									<p class="mt-2 text-sm text-red-300">
+										{uploadError}
+									</p>
 								{/if}
 							</div>
 						{/if}
