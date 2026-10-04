@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import type { Event, RSVP} from '$lib/types';
+	import type { Event, RSVP, Media} from '$lib/types';
 	import { RSVPStatus } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -10,13 +10,17 @@
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
 	import { sql } from 'drizzle-orm';
+	import { images } from '../../imageData.js'; // TODO: Remove
+	import Slide from '../../slide.svelte'; // TODO: Fix path
+	import { invalidateAll } from '$app/navigation';
 
-	export let data: { event: Event; rsvps: RSVP[]; userId: string };
+	export let data: { event: Event; rsvps: RSVP[]; media: Media[]; userId: string };
 	type FormDataLocal = { success?: boolean; error?: string; type?: 'add' | 'remove' | 'copy' };
 	export let form: FormDataLocal | undefined;
 
 	let event: Event;
 	let rsvps: RSVP[] = [];
+	let media: Media[] = [];
 	let newAttendeeName = '';
 	let newAttendeeStatus = RSVPStatus.yes;
 	let isAddingRSVP = false;
@@ -30,9 +34,15 @@
 	let typeToShow: 'add' | 'remove' | 'copy' | undefined;
 	let successHideTimer: number | null = null;
 
+	// TODO: Setup Images
+	let imageShowingIndex = 0;
+	$: console.log(imageShowingIndex);
+	$: image = images[imageShowingIndex];
+
 	// Use server-side data
 	$: event = data.event;
 	$: rsvps = data.rsvps;
+	$: media = data.media;
 	$: currentUserId = data.userId;
 	$: isEventCreator = event.user_id === currentUserId;
 
@@ -114,6 +124,175 @@
 	const closeCalendarModal = () => {
 		showCalendarModal = false;
 	};
+
+	const nextSlide = () => {
+		if (media.length === 0) {
+			return;
+		}
+
+		imageShowingIndex =
+			imageShowingIndex === media.length - 1
+				? 0
+				: imageShowingIndex + 1;
+	};
+
+
+	const prevSlide = () => {
+		if (media.length === 0) {
+			return;
+		}
+
+		imageShowingIndex =
+			imageShowingIndex === 0
+				? media.length - 1
+				: imageShowingIndex - 1;
+	};
+
+	let errorMessage = '';
+	let isDeleting = false;
+	let deleteError = '';
+
+	async function deleteClick() {
+		const image = currentMedia;
+
+		if (!image || isDeleting) {
+			return;
+		}
+
+		const confirmed = window.confirm(
+			'Are you sure you want to delete this image?'
+		);
+
+		if (!confirmed) {
+			return;
+		}
+
+		isDeleting = true;
+		deleteError = '';
+		errorMessage = '';
+
+		try {
+			const response = await fetch(
+				`/api/event/${eventId}/media?mediaId=${encodeURIComponent(image.id)}`,
+				{
+					method: 'DELETE',
+					credentials: 'same-origin'
+				}
+			);
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error ?? 'Failed to delete image');
+			}
+
+			/*
+			* Reload data returned by the page's load function.
+			* This updates data.media and therefore the reactive media variable.
+			*/
+			await invalidateAll();
+
+			// Keep the index valid after deleting the last image.
+			if (media.length === 0) {
+				imageShowingIndex = 0;
+			} else if (imageShowingIndex >= media.length) {
+				imageShowingIndex = media.length - 1;
+			}
+		} catch (error) {
+			deleteError =
+				error instanceof Error ? error.message : 'Failed to delete image';
+		} finally {
+			isDeleting = false;
+		}
+	}
+
+	let uploadInput: HTMLInputElement;
+	let selectedFiles: File[] = [];
+	let isUploading = false;
+	let uploadError = '';
+
+	function handleFileSelection(event) {
+		const input = event.currentTarget as HTMLInputElement;
+
+		selectedFiles = Array.from(input.files ?? []);
+		uploadError = '';
+	}
+
+	function clearSelectedFiles() {
+		selectedFiles = [];
+
+		if (uploadInput) {
+			uploadInput.value = '';
+		}
+	}
+
+	async function uploadSelectedFiles() {
+		if (selectedFiles.length === 0 || isUploading) {
+			return;
+		}
+
+		isUploading = true;
+		uploadError = '';
+
+		const formData = new FormData();
+
+		for (const file of selectedFiles) {
+			formData.append('files', file, file.name);
+		}
+
+		try {
+			const response = await fetch(`/api/event/${eventId}/media`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'same-origin'
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error ?? 'Failed to upload photos');
+			}
+
+			// Re-run the page's load function, including the media query.
+			await invalidateAll();
+
+			clearSelectedFiles();
+			imageShowingIndex = 0;
+		} catch (error) {
+			uploadError = error instanceof Error ? error.message : 'Failed to upload photos';
+		} finally {
+			isUploading = false;
+		}
+	}
+
+	$: currentMedia = media[imageShowingIndex];
+
+	$: currentMediaAttribute = (() => {
+		if (!currentMedia) return '';
+
+		// Prefer the attendee's primary RSVP over a guest entry.
+		const attendee =
+			rsvps.find(
+				(attendee) =>
+					attendee.user_id === currentMedia.user_id &&
+					!attendee.name.includes("'s Guest")
+			) ??
+			rsvps.find((attendee) => attendee.user_id === currentMedia.user_id);
+
+		return attendee?.name ?? '';
+	})();
+
+	$: isConfirmedAttendee = rsvps.some(
+		(attendee) =>
+			attendee.user_id === currentUserId &&
+			attendee.status === RSVPStatus.yes
+	);
+
+	$: canUploadMedia = isEventCreator || isConfirmedAttendee;
+
+	$: isMediaAttribute = (currentMedia) && (currentMedia.user_id === currentUserId);
+
+	$: canDeleteCurrentImage = isMediaAttribute || isEventCreator;
 </script>
 
 <svelte:head>
@@ -509,6 +688,129 @@
 						{t('event.addToCalendarButton')}
 					</button>
 				</div>
+
+				<!-- Event Photos -->
+				<div class="rounded-sm border p-6 shadow-2xl backdrop-blur-sm">
+						<div class="mb-4 flex items-center justify-between">
+							<h3 class=" text-xl font-bold">{t('event.photosTitle')}</h3>
+						</div>
+
+						{#if media.length === 0}
+							<div class="text-dark-400 py-8 text-center">
+								<p>{t('event.noPhotosYet')}</p>
+							</div>
+						{:else}
+							<div class="container">
+								<!-- Link attribute to actual user name from event (if available) -->
+								<Slide image={`/api/media/${media[imageShowingIndex].id}`} 
+										altTag={`${currentMediaAttribute}'s Photo'`} 
+										attribute={currentMediaAttribute}
+										slideNo={imageShowingIndex} 
+										totalSlides={media.length}
+										canDelete={canDeleteCurrentImage}
+										on:prevClick={prevSlide}
+										on:nextClick={nextSlide}
+										on:deleteClick={deleteClick}
+										/>
+							</div>
+						{/if}
+						{#if true}
+							<div class="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+								<input
+									bind:this={uploadInput}
+									id="event-photo-upload"
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									multiple
+									class="hidden"
+									on:change={handleFileSelection}
+								/>
+
+								<!-- Add photos and selected count -->
+								<div class="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-start">
+									<label
+										for="event-photo-upload"
+										class="inline-flex shrink-0 cursor-pointer items-center rounded-sm border border-violet-500 bg-violet-400/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-400/50"
+									>
+										<span class="mr-2 text-lg leading-none">+</span>
+										Add photos
+									</label>
+
+									{#if selectedFiles.length > 0}
+										<span class="whitespace-nowrap text-xs text-violet-300">
+											{selectedFiles.length} selected
+										</span>
+									{/if}
+								</div>
+
+								{#if selectedFiles.length > 0}
+									<!-- Mobile: second line, full width -->
+									<!-- Desktop: same line, right aligned -->
+									<div class="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
+										<button
+											type="button"
+											title={isUploading
+												? 'Uploading photos'
+												: `Upload ${selectedFiles.length} selected images`}
+											aria-label={isUploading
+												? 'Uploading photos'
+												: `Upload ${selectedFiles.length} selected images`}
+											disabled={isUploading}
+											on:click={uploadSelectedFiles}
+											class="flex h-10 w-10 items-center justify-center rounded-sm border border-teal-400 bg-teal-400/20 text-teal-200 transition hover:bg-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50"
+										>
+											{#if isUploading}
+												<span class="text-xs">...</span>
+											{:else}
+												<svg
+													class="h-5 w-5"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+													aria-hidden="true"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"
+													/>
+												</svg>
+											{/if}
+										</button>
+
+										<button
+											type="button"
+											title="Cancel photo selection"
+											aria-label="Cancel photo selection"
+											on:click={clearSelectedFiles}
+											class="flex h-10 w-10 items-center justify-center rounded-sm border border-gray-400/60 bg-gray-400/10 text-gray-200 transition hover:bg-gray-400/25"
+										>
+											<svg
+												class="h-5 w-5"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												aria-hidden="true"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M6 6l12 12M18 6L6 18"
+												/>
+											</svg>
+										</button>
+									</div>
+								{/if}
+								{#if uploadError}
+									<p class="mt-2 text-sm text-red-300">
+										{uploadError}
+									</p>
+								{/if}
+							</div>
+						{/if}
+					</div>
 			</div>
 		{/if}
 	</div>

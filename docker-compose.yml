@@ -33,6 +33,8 @@ services:
     container_name: cactoide-app
     ports:
       - '${PORT:-5111}:3000'
+    volumes:
+      - image_data:/app/media
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://cactoide:cactoide_password@postgres:5432/cactoide_database}
       PORT: 3000
@@ -41,19 +43,23 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-trace}
       PUBLIC_LANDING_INFO: ${PUBLIC_LANDING_INFO:-true}
       FEDERATION_INSTANCE: ${FEDERATION_INSTANCE:-true}
+      BODY_SIZE_LIMIT: 12M
+      MEDIA_ROOT: /app/media
+      ORIGIN: http://localhost:5173
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - cactoide-network
-      - web
+      # - web
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  image_data:
 
 networks:
   cactoide-network:
     driver: bridge
-  web:
-    external: true
+  # web:
+  #   external: true

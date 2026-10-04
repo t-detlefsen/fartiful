@@ -1,5 +1,5 @@
 import { database } from '$lib/database/db';
-import { events, rsvps } from '$lib/database/schema';
+import { events, rsvps, media } from '$lib/database/schema';
 import { eq, asc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
@@ -14,9 +14,10 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
 	try {
 		// Fetch event and RSVPs in parallel
-		const [eventData, rsvpData] = await Promise.all([
+		const [eventData, rsvpData, mediaData] = await Promise.all([
 			database.select().from(events).where(eq(events.id, eventId)).limit(1),
-			database.select().from(rsvps).where(eq(rsvps.eventId, eventId)).orderBy(asc(rsvps.createdAt))
+			database.select().from(rsvps).where(eq(rsvps.eventId, eventId)).orderBy(asc(rsvps.createdAt)),
+			database.select().from(media).where(eq(media.eventId, eventId)).orderBy(asc(media.createdAt))
 		]);
 
 		if (!eventData[0]) {
@@ -25,6 +26,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
 		const event = eventData[0];
 		const eventRsvps = rsvpData;
+		const eventMedia = mediaData;
 
 		// Check if this is an invite-only event
 		if (event.visibility === 'invite-only') {
@@ -63,11 +65,20 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 			created_at: rsvp.createdAt?.toISOString() || new Date().toISOString()
 		}));
 
+		const transformedMedia = eventMedia.map((media) => ({
+			id: media.id,
+			event_id: media.eventId,
+			user_id: media.userId,
+			filename: media.filename,
+			created_at: media.createdAt?.toISOString() || new Date().toISOString()
+		}));
+
 		const userId = cookies.get('cactoideUserId');
 
 		return {
 			event: transformedEvent,
 			rsvps: transformedRsvps,
+			media: transformedMedia,
 			userId: userId
 		};
 	} catch (err) {
