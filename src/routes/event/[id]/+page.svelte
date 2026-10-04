@@ -126,18 +126,83 @@
 	};
 
 	const nextSlide = () => {
-		if (imageShowingIndex === media.length-1) {
-			imageShowingIndex = 0;
-		} else {
-			imageShowingIndex += 1;
+		if (media.length === 0) {
+			return;
 		}
-	}
-	
+
+		imageShowingIndex =
+			imageShowingIndex === media.length - 1
+				? 0
+				: imageShowingIndex + 1;
+	};
+
+
 	const prevSlide = () => {
-		if (imageShowingIndex === 0) {
-			imageShowingIndex = media.length-1;
-		} else {
-			imageShowingIndex -= 1;
+		if (media.length === 0) {
+			return;
+		}
+
+		imageShowingIndex =
+			imageShowingIndex === 0
+				? media.length - 1
+				: imageShowingIndex - 1;
+	};
+
+	let errorMessage = '';
+	let isDeleting = false;
+	let deleteError = '';
+
+	async function deleteClick() {
+		const image = currentMedia;
+
+		if (!image || isDeleting) {
+			return;
+		}
+
+		const confirmed = window.confirm(
+			'Are you sure you want to delete this image?'
+		);
+
+		if (!confirmed) {
+			return;
+		}
+
+		isDeleting = true;
+		deleteError = '';
+		errorMessage = '';
+
+		try {
+			const response = await fetch(
+				`/api/event/${eventId}/media?mediaId=${encodeURIComponent(image.id)}`,
+				{
+					method: 'DELETE',
+					credentials: 'same-origin'
+				}
+			);
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error ?? 'Failed to delete image');
+			}
+
+			/*
+			* Reload data returned by the page's load function.
+			* This updates data.media and therefore the reactive media variable.
+			*/
+			await invalidateAll();
+
+			// Keep the index valid after deleting the last image.
+			if (media.length === 0) {
+				imageShowingIndex = 0;
+			} else if (imageShowingIndex >= media.length) {
+				imageShowingIndex = media.length - 1;
+			}
+		} catch (error) {
+			deleteError =
+				error instanceof Error ? error.message : 'Failed to delete image';
+		} finally {
+			isDeleting = false;
 		}
 	}
 
@@ -642,9 +707,10 @@
 										attribute={currentMediaAttribute}
 										slideNo={imageShowingIndex} 
 										totalSlides={media.length}
-										canDelete={true}
+										canDelete={canDeleteCurrentImage}
 										on:prevClick={prevSlide}
 										on:nextClick={nextSlide}
+										on:deleteClick={deleteClick}
 										/>
 							</div>
 						{/if}

@@ -8,7 +8,7 @@ import {
 	ImageValidationError,
 	processImage
 } from '$lib/server/imageValidation';
-import { storeProcessedImage } from '$lib/server/mediaStorage';
+import { storeProcessedImage, deleteStoredImage } from '$lib/server/mediaStorage';
 
 const USER_COOKIE = 'cactoideUserId';
 const MAX_FILES_PER_REQUEST = 10;
@@ -38,8 +38,6 @@ export const POST = async ({
 	// Browsers normally send Origin on fetch POST requests.
 	const origin = request.headers.get('origin');
 
-	console.log(url.origin)
-	console.log(origin)
 	if (origin && origin !== url.origin) {
 		return errorResponse('Invalid request origin', 403);
 	}
@@ -275,4 +273,98 @@ export const POST = async ({
         }))
     });
 
+};
+
+export const DELETE = async ({ params, request, cookies, url }) => {
+	const eventId = params.id;
+
+	if (!eventId) {
+		return errorResponse('Event ID is required', 400);
+	}
+
+	// Protect cookie-authenticated state-changing requests.
+	const origin = request.headers.get('origin');
+
+	if (origin && origin !== url.origin) {
+		return errorResponse('Invalid request origin', 403);
+	}
+
+	const userId = cookies.get(USER_COOKIE);
+
+	if (!userId) {
+		return errorResponse('Authentication required', 401);
+	}
+
+	const userIdIsUuid =
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+			userId
+		);
+
+	if (!userIdIsUuid) {
+		return errorResponse('Invalid user identity', 401);
+	}
+
+	const mediaId = url.searchParams.get('mediaId');
+
+	if (!mediaId) {
+		return errorResponse('Media ID is required', 400);
+	}
+
+	const event = await database.query.events.findFirst({
+		where: eq(events.id, eventId),
+		columns: {
+			id: true,
+			userId: true
+		}
+	});
+
+	if (!event) {
+		return errorResponse('Event not found', 404);
+	}
+
+	const image = await database.query.media.findFirst({
+		where: and(eq(media.id, mediaId), eq(media.eventId, eventId)),
+		columns: {
+			id: true,
+			eventId: true,
+			userId: true,
+			filename: true
+		}
+	});
+
+	if (!image) {
+		return errorResponse('Image not found', 404);
+	}
+
+	// This policy allows the event creator or the person who uploaded
+	// the image to delete it.
+	const canDelete = event.userId === userId || image.userId === userId;
+
+	if (!canDelete) {
+		return errorResponse('You are not allowed to delete this image', 403);
+	}
+
+	try {
+		// Delete the physical file first.
+		await deleteStoredImage(image.eventId, image.filename);
+
+		// Then delete the database record.
+		await database
+			.delete(media)
+			.where(
+				and(
+					eq(media.id, image.id),
+					eq(media.eventId, eventId)
+				)
+			);
+
+		return json({
+			ok: true,
+			mediaId: image.id
+		});
+	} catch (error) {
+		console.error('Failed to delete image:', error);
+
+		return errorResponse('Failed to delete image', 500);
+	}
 };

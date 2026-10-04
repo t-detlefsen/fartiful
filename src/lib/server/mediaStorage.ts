@@ -53,3 +53,40 @@ export async function storeProcessedImage(
 		throw error;
 	}
 }
+
+function assertSafePathPart(value: string) {
+	if (
+		!value ||
+		value === '.' ||
+		value === '..' ||
+		value.includes('/') ||
+		value.includes('\\') ||
+		value.includes('\0')
+	) {
+		throw new Error('Invalid media path');
+	}
+}
+
+export function getStoredImagePath(eventId: string, filename: string) {
+	assertSafePathPart(eventId);
+	assertSafePathPart(filename);
+
+	return path.join(MEDIA_ROOT, eventId, filename);
+}
+
+export async function deleteStoredImage(
+	eventId: string,
+	filename: string
+): Promise<void> {
+	const filePath = getStoredImagePath(eventId, filename);
+
+	try {
+		await unlink(filePath);
+	} catch (error: unknown) {
+		// Treat an already-missing file as success. The database row can
+		// still be removed so the gallery does not remain broken.
+		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+			throw error;
+		}
+	}
+}
