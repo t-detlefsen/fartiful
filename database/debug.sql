@@ -5,8 +5,8 @@ BEGIN;
 -- from information_schema.columns
 -- where table_name = 'media';
 
--- List specified column contents
-SELECT storage_key FROM media;
+-- -- List specified column contents
+-- SELECT storage_key FROM media;
 
 -- -- Create media table
 -- CREATE TABLE IF NOT EXISTS media (

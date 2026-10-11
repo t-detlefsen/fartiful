@@ -1,4 +1,15 @@
 services:
+  # Initalize Container
+  init-chmod:
+    image: alpine:latest
+    container_name: cactoide-init-chmod
+    user: "0:0" # Explicitly run as root to fix the permissions
+    volumes:
+      - image_data:/app/media
+    command: chown -R 1000:1000 /app/media # Changes volume ownership to the node user
+    # This container does its job and closes immediately, no restart needed
+    restart: "no" 
+
   # Database
   postgres:
     image: postgres:15-alpine
@@ -34,7 +45,15 @@ services:
     ports:
       - '${PORT:-5111}:3000'
     volumes:
-      - image_data:/app/media
+      - type: volume
+        source: image_data
+        target: /app/media
+        volume:
+          nocopy: true
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 134217728
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://cactoide:cactoide_password@postgres:5432/cactoide_database}
       PORT: 3000
@@ -45,14 +64,17 @@ services:
       FEDERATION_INSTANCE: ${FEDERATION_INSTANCE:-true}
       BODY_SIZE_LIMIT: 12M
       MEDIA_ROOT: /app/media
-      ORIGIN: http://localhost:5173
+      ORIGIN: https://rsvp.tdetlefsen.com
+      PROTOCOL_HEADER: x-forwarded-proto
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - cactoide-network
-      # - web
+      - web
     restart: unless-stopped
+    read_only: true
+    user: "1000:1000"
 
 volumes:
   postgres_data:
@@ -61,5 +83,5 @@ volumes:
 networks:
   cactoide-network:
     driver: bridge
-  # web:
-  #   external: true
+  web:
+    external: true
