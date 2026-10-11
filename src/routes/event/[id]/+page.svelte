@@ -7,11 +7,10 @@
 	import { enhance } from '$app/forms';
 	import { formatTime, formatDate, formatStatus, confirmedLength } from '$lib/dateHelpers.js';
 	import CalendarModal from '$lib/components/CalendarModal.svelte';
+	import Slide from '$lib/components/slide.svelte';
 	import type { CalendarEvent } from '$lib/calendarHelpers.js';
 	import { t } from '$lib/i18n/i18n.js';
 	import { sql } from 'drizzle-orm';
-	import { images } from '../../imageData.js'; // TODO: Remove
-	import Slide from '../../slide.svelte'; // TODO: Fix path
 	import { invalidateAll } from '$app/navigation';
 
 	export let data: { event: Event; rsvps: RSVP[]; media: Media[]; userId: string };
@@ -33,11 +32,6 @@
 	let toastType: 'add' | 'remove' | 'copy' | null = null;
 	let typeToShow: 'add' | 'remove' | 'copy' | undefined;
 	let successHideTimer: number | null = null;
-
-	// TODO: Setup Images
-	let imageShowingIndex = 0;
-	$: console.log(imageShowingIndex);
-	$: image = images[imageShowingIndex];
 
 	// Use server-side data
 	$: event = data.event;
@@ -125,6 +119,9 @@
 		showCalendarModal = false;
 	};
 
+	// Slide helpers
+	let imageShowingIndex = 0;
+
 	const nextSlide = () => {
 		if (media.length === 0) {
 			return;
@@ -135,7 +132,6 @@
 				? 0
 				: imageShowingIndex + 1;
 	};
-
 
 	const prevSlide = () => {
 		if (media.length === 0) {
@@ -148,9 +144,39 @@
 				: imageShowingIndex - 1;
 	};
 
-	let errorMessage = '';
+	// Image attribute and media helpers
+	$: currentMedia = media[imageShowingIndex];
+
+	$: currentMediaAttribute = (() => {
+		if (!currentMedia) return '';
+
+		// Prefer the attendee's primary RSVP over a guest entry.
+		const attendee =
+			rsvps.find(
+				(attendee) =>
+					attendee.user_id === currentMedia.user_id &&
+					!attendee.name.includes("'s Guest")
+			) ??
+			rsvps.find((attendee) => attendee.user_id === currentMedia.user_id);
+
+		return attendee?.name ?? '';
+	})();
+
+	$: isConfirmedAttendee = rsvps.some(
+		(attendee) =>
+			attendee.user_id === currentUserId &&
+			attendee.status === RSVPStatus.yes
+	);
+
+	$: canUploadMedia = isEventCreator || isConfirmedAttendee;
+
+	$: isMediaAttribute = (currentMedia) && (currentMedia.user_id === currentUserId);
+
+	// Delete Image
 	let isDeleting = false;
 	let deleteError = '';
+
+	$: canDeleteCurrentImage = isMediaAttribute || isEventCreator;
 
 	async function deleteClick() {
 		const image = currentMedia;
@@ -169,7 +195,6 @@
 
 		isDeleting = true;
 		deleteError = '';
-		errorMessage = '';
 
 		try {
 			const response = await fetch(
@@ -264,35 +289,6 @@
 			isUploading = false;
 		}
 	}
-
-	$: currentMedia = media[imageShowingIndex];
-
-	$: currentMediaAttribute = (() => {
-		if (!currentMedia) return '';
-
-		// Prefer the attendee's primary RSVP over a guest entry.
-		const attendee =
-			rsvps.find(
-				(attendee) =>
-					attendee.user_id === currentMedia.user_id &&
-					!attendee.name.includes("'s Guest")
-			) ??
-			rsvps.find((attendee) => attendee.user_id === currentMedia.user_id);
-
-		return attendee?.name ?? '';
-	})();
-
-	$: isConfirmedAttendee = rsvps.some(
-		(attendee) =>
-			attendee.user_id === currentUserId &&
-			attendee.status === RSVPStatus.yes
-	);
-
-	$: canUploadMedia = isEventCreator || isConfirmedAttendee;
-
-	$: isMediaAttribute = (currentMedia) && (currentMedia.user_id === currentUserId);
-
-	$: canDeleteCurrentImage = isMediaAttribute || isEventCreator;
 </script>
 
 <svelte:head>
@@ -703,7 +699,7 @@
 							<div class="container">
 								<!-- Link attribute to actual user name from event (if available) -->
 								<Slide image={`/api/media/${media[imageShowingIndex].id}`} 
-										altTag={`${currentMediaAttribute}'s Photo'`} 
+										altTag={`${currentMediaAttribute}'s Photo`} 
 										attribute={currentMediaAttribute}
 										slideNo={imageShowingIndex} 
 										totalSlides={media.length}
@@ -714,7 +710,7 @@
 										/>
 							</div>
 						{/if}
-						{#if true}
+						{#if canUploadMedia}
 							<div class="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								<input
 									bind:this={uploadInput}
@@ -733,7 +729,7 @@
 										class="inline-flex shrink-0 cursor-pointer items-center rounded-sm border border-violet-500 bg-violet-400/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-400/50"
 									>
 										<span class="mr-2 text-lg leading-none">+</span>
-										Add photos
+										{t('event.addPhoto')}
 									</label>
 
 									{#if selectedFiles.length > 0}

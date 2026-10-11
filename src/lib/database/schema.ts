@@ -101,16 +101,16 @@ export const media = pgTable(
 			.notNull()
 			.references(() => events.id, { onDelete: 'cascade' }),
 		userId: varchar('user_id', { length: 100 }).notNull(),
-		filename: varchar('filename', { length: 50 }).notNull(),
+		storageKey: varchar('storage_key', { length: 50 }).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
 	},
 	(t) => ({
 		idxMediaEventId: index('idx_media_event_id').on(t.eventId),
 		idxMediaUserId: index('idx_media_user_id').on(t.userId),
-		idxMediaFilename: index('idx_media_filename').on(t.filename),
+		idxMediaFilename: index('idx_media_storage_key').on(t.storageKey),
 		idxMediaCreatedAt: index('idx_media_created_at').on(t.createdAt),
 		// UNIQUE(event_id, name) constraint
-		uqEventName: uniqueIndex('rsvps_media_id_name_unique').on(t.eventId, t.filename)
+		uqEventName: uniqueIndex('rsvps_media_id_name_unique').on(t.eventId, t.storageKey)
 	})
 );
 
@@ -123,11 +123,12 @@ export const eventsRelations = relations(events, ({ many }) => ({
 	media: many(media)
 }));
 
-export const rsvpsRelations = relations(rsvps, ({ one }) => ({
+export const rsvpsRelations = relations(rsvps, ({ one, many }) => ({
 	event: one(events, {
 		fields: [rsvps.eventId],
 		references: [events.id]
-	})
+	}),
+	media: many(media)
 }));
 
 export const inviteTokensRelations = relations(inviteTokens, ({ one }) => ({
@@ -141,6 +142,10 @@ export const mediaRelations = relations(media, ({ one }) => ({
 	event: one(events, {
 		fields: [media.eventId],
 		references: [events.id]
+	}),
+	rsvp: one(rsvps, {
+		fields: [media.userId],
+		references: [rsvps.userId]
 	})
 }));
 
@@ -164,6 +169,10 @@ export type EventWithInviteTokens = Event & {
 };
 
 export type EventWithMedia = Event & {
+	media: Media[];
+}
+
+export type RsvpWithMedia = Rsvp & {
 	media: Media[];
 }
 

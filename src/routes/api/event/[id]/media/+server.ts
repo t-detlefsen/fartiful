@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, or, eq, sql } from 'drizzle-orm';
+import { unlink } from 'node:fs/promises';
 import { database } from '$lib/database/db';
 import { events, rsvps, media } from '$lib/database/schema';
 import { RSVPStatus } from '$lib/types'; // Adjust this import.
@@ -14,44 +15,45 @@ const USER_COOKIE = 'cactoideUserId';
 const MAX_FILES_PER_REQUEST = 10;
 const MAX_IMAGES_PER_EVENT = 100;
 
+// Package API errors
 function errorResponse(message: string, status: number) {
 	return json({ error: message }, { status });
 }
 
+// Check if value is file
 function isFile(value: FormDataEntryValue | null): value is File {
 	return value instanceof File;
 }
 
+// API Endpoint for image upload
 export const POST = async ({
 	params,
 	request,
 	cookies,
 	url
 }) => {
+	// Check for event id
 	const eventId = params.id;
 
 	if (!eventId) {
 		return errorResponse('Event ID is required', 400);
 	}
 
-	// Optional but useful for cookie-authenticated POST requests.
-	// Browsers normally send Origin on fetch POST requests.
+	// Protect cookie-authenticated state-changing requests.
 	const origin = request.headers.get('origin');
 
 	if (origin && origin !== url.origin) {
 		return errorResponse('Invalid request origin', 403);
 	}
 
+	// Get user id from cookies
 	const userId = cookies.get(USER_COOKIE);
 
-	// Do not create a new identity inside this upload request.
-	// An absent cookie means this request is unauthenticated.
 	if (!userId) {
 		return errorResponse('Authentication required', 401);
 	}
 
 	// If the cookie is intended to contain UUIDs, validate it before using it
-	// in database queries.
 	const userIdIsUuid =
 		/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
 			userId
@@ -61,6 +63,7 @@ export const POST = async ({
 		return errorResponse('Invalid user identity', 401);
 	}
 
+	// Validate event
 	const event = await database.query.events.findFirst({
 		where: eq(events.id, eventId),
 		columns: {
@@ -73,19 +76,20 @@ export const POST = async ({
 		return errorResponse('Event not found', 404);
 	}
 
+	// Validate user for upload (event creator or yes/maybe attendee)
 	const isEventCreator = event.userId === userId;
 
 	let isConfirmedAttendee = false;
-
-    console.log(eventId)
-    console.log(userId)
 
 	if (!isEventCreator) {
 		const confirmedRsvp = await database.query.rsvps.findFirst({
 			where: and(
 				eq(rsvps.eventId, eventId),
 				eq(rsvps.userId, userId),
-				// eq(rsvps.status, RSVPStatus.yes)
+				or(
+					eq(rsvps.status, RSVPStatus.yes),
+					eq(rsvps.status, RSVPStatus.maybe)
+				)
 			),
 			columns: {
 				userId: true
@@ -99,6 +103,7 @@ export const POST = async ({
 		return errorResponse('You are not allowed to upload to this event', 403);
 	}
 
+	// Check form data is multipart (multiple image upload)
 	const contentType = request.headers.get('content-type') ?? '';
 
 	if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
@@ -115,13 +120,13 @@ export const POST = async ({
         return errorResponse('Invalid multipart request', 400);
     }
 
-
 	const values = formData.getAll('files');
 
 	if (values.length === 0) {
 		return errorResponse('No files were uploaded', 400);
 	}
 
+	// Check files against limit
 	if (values.length > MAX_FILES_PER_REQUEST) {
 		return errorResponse(
 			`A maximum of ${MAX_FILES_PER_REQUEST} files may be uploaded at once`,
@@ -129,6 +134,7 @@ export const POST = async ({
 		);
 	}
 
+	// Check each file and add to array
 	const files: File[] = [];
 
 	for (const value of values) {
@@ -152,130 +158,138 @@ export const POST = async ({
 		files.push(value);
 	}
 
-	/*
-	 * This is intentionally only a temporary count check.
-	 *
-	 * It is not sufficient for the final implementation because two
-	 * simultaneous requests can both pass this check. The final database
-	 * insertion path needs a transaction or another concurrency-safe
-	 * mechanism.
-	 */
-	const existingMediaCount = await database.execute<{ count: number }>(sql`
-		SELECT COUNT(*)::int AS count
-		FROM media
-		WHERE event_id = ${eventId}
-	`);
+	// Avoid race conditions by locking event during upload
+	return await database.transaction(async (tx) => {
+		// Lock the parent event row to prevent other requests from counting at the same time
+		await tx
+			.select()
+			.from(events)
+			.where(eq(events.id, eventId))
+			.for('update');
 
-	const currentCount = Number(existingMediaCount[0]?.count ?? 0);
+		// Safely get the current count inside the locked transaction
+		const [result] = await tx
+			.select({ count: sql<number>`count(*)::int` })
+			.from(media)
+			.where(eq(media.eventId, eventId));
 
-	if (currentCount + files.length > MAX_IMAGES_PER_EVENT) {
-		return errorResponse(
-			`The event can contain at most ${MAX_IMAGES_PER_EVENT} images`,
-			409
-		);
-	}
+		const currentCount = Number(result?.count ?? 0);
 
-    type ProcessedImageSummary = {
-        buffer: Buffer;
-        originalName: string;
-        sourceFormat: string;
-        width: number;
-        height: number;
-        size: number;
-    };
-
-    const processed: ProcessedImageSummary[] = [];
-
-	for (const file of files) {
-		let image: Awaited<ReturnType<typeof processImage>>;
-
-		try {
-			// The browser MIME type and filename are deliberately ignored.
-			const buffer = Buffer.from(await file.arrayBuffer());
-			image = await processImage(buffer);
-		} catch (error) {
-			if (error instanceof ImageValidationError) {
-				return errorResponse(
-					`${file.name || 'Uploaded file'}: ${error.message}`,
-					415
-				);
-			}
-
-			console.error('Unexpected image-processing error', error);
-			return errorResponse('Image processing failed', 422);
+		// Enforce file limit rule
+		if (currentCount + files.length > MAX_IMAGES_PER_EVENT) {
+			return errorResponse(
+				`The event can contain at most ${MAX_IMAGES_PER_EVENT} images`,
+				409
+			);
 		}
 
-		processed.push({
-            buffer: image.buffer,
-			originalName: file.name,
-			sourceFormat: image.sourceFormat,
-			width: image.width,
-			height: image.height,
-			size: image.size
+		type ProcessedImageSummary = {
+			buffer: Buffer;
+			originalName: string;
+			sourceFormat: string;
+			width: number;
+			height: number;
+			size: number;
+		};
+
+		const processed: ProcessedImageSummary[] = [];
+
+		// Loop through images and process using processImage())
+		for (const file of files) {
+			let image: Awaited<ReturnType<typeof processImage>>;
+
+			try {
+				const buffer = Buffer.from(await file.arrayBuffer());
+				image = await processImage(buffer);
+			} catch (error) {
+				if (error instanceof ImageValidationError) {
+					return errorResponse(
+						`${file.name || 'Uploaded file'}: ${error.message}`,
+						415
+					);
+				}
+
+				console.error('Unexpected image-processing error', error);
+				return errorResponse('Image processing failed', 422);
+			}
+
+			processed.push({
+				buffer: image.buffer,
+				originalName: file.name,
+				sourceFormat: image.sourceFormat,
+				width: image.width,
+				height: image.height,
+				size: image.size
+			});
+		}
+
+		const storedFiles: Array<{
+			storageKey: string;
+			path: string;
+			width: number;
+			height: number;
+			size: number;
+			sourceFormat: string;
+		}> = [];
+
+		// Loop through images and store using storeProcessedImage()
+		try {
+			for (const image of processed) {
+				// Store image in volume
+				const stored = await storeProcessedImage(eventId, image.buffer);
+
+				// Mark as stored
+				storedFiles.push({
+					storageKey: stored.storageKey,
+					path: stored.path,
+					width: image.width,
+					height: image.height,
+					size: image.size,
+					sourceFormat: image.sourceFormat
+				});
+
+				// Add image to database
+				await tx.insert(media).values({
+					id: crypto.randomUUID(),
+					eventId,
+					userId,
+					storageKey: stored.storageKey,
+					createdAt: new Date()
+				});
+			}
+		} catch (error) {
+			console.error('Failed to store uploaded image:', error);
+
+			// Clean up any files already stored during this request.
+			for (const stored of storedFiles) {
+			    try {
+			        await unlink(stored.path);
+			    } catch {
+			        console.error('Failed to clean up', stored.path);
+			    }
+			}
+
+			return errorResponse('Failed to store uploaded image', 500);
+		}
+
+		return json({
+			ok: true,
+			eventId,
+			count: storedFiles.length,
+			images: storedFiles.map((image) => ({
+				storageKey: image.storageKey,
+				sourceFormat: image.sourceFormat,
+				width: image.width,
+				height: image.height,
+				size: image.size
+			}))
 		});
-	}
-
-    const storedFiles: Array<{
-        filename: string;
-        path: string;
-        width: number;
-        height: number;
-        size: number;
-        sourceFormat: string;
-    }> = [];
-
-    try {
-        for (const image of processed) {
-            const stored = await storeProcessedImage(eventId, image.buffer);
-
-            storedFiles.push({
-                filename: stored.filename,
-                path: stored.path,
-                width: image.width,
-                height: image.height,
-                size: image.size,
-                sourceFormat: image.sourceFormat
-            });
-
-            await database.insert(media).values({
-                id: crypto.randomUUID(),
-                eventId,
-                userId,
-                filename: stored.filename,
-                createdAt: new Date()
-            });
-        }
-    } catch (error) {
-        console.error('Failed to store uploaded image:', error);
-
-        // // Clean up any files already stored during this request.
-        // for (const stored of storedFiles) {
-        //     try {
-        //         await unlink(stored.path);
-        //     } catch {
-        //         console.error('Failed to clean up', stored.path);
-        //     }
-        // }
-
-        return errorResponse('Failed to store uploaded image', 500);
-    }
-
-	return json({
-        ok: true,
-        eventId,
-        count: storedFiles.length,
-        images: storedFiles.map((image) => ({
-            filename: image.filename,
-            sourceFormat: image.sourceFormat,
-            width: image.width,
-            height: image.height,
-            size: image.size
-        }))
-    });
-
+	});
 };
 
+// API Endpoint for image deletion
 export const DELETE = async ({ params, request, cookies, url }) => {
+	// Check for event id
 	const eventId = params.id;
 
 	if (!eventId) {
@@ -289,12 +303,14 @@ export const DELETE = async ({ params, request, cookies, url }) => {
 		return errorResponse('Invalid request origin', 403);
 	}
 
+	// Get user id from cookies
 	const userId = cookies.get(USER_COOKIE);
 
 	if (!userId) {
 		return errorResponse('Authentication required', 401);
 	}
 
+	// If the cookie is intended to contain UUIDs, validate it before using it
 	const userIdIsUuid =
 		/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
 			userId
@@ -304,12 +320,14 @@ export const DELETE = async ({ params, request, cookies, url }) => {
 		return errorResponse('Invalid user identity', 401);
 	}
 
+	// Check for media id
 	const mediaId = url.searchParams.get('mediaId');
 
 	if (!mediaId) {
 		return errorResponse('Media ID is required', 400);
 	}
 
+	// Validate event
 	const event = await database.query.events.findFirst({
 		where: eq(events.id, eventId),
 		columns: {
@@ -322,13 +340,14 @@ export const DELETE = async ({ params, request, cookies, url }) => {
 		return errorResponse('Event not found', 404);
 	}
 
+	// Validate image
 	const image = await database.query.media.findFirst({
 		where: and(eq(media.id, mediaId), eq(media.eventId, eventId)),
 		columns: {
 			id: true,
 			eventId: true,
 			userId: true,
-			filename: true
+			storageKey: true
 		}
 	});
 
@@ -336,8 +355,7 @@ export const DELETE = async ({ params, request, cookies, url }) => {
 		return errorResponse('Image not found', 404);
 	}
 
-	// This policy allows the event creator or the person who uploaded
-	// the image to delete it.
+	// Validate user for deletion (event creator or image uploader)
 	const canDelete = event.userId === userId || image.userId === userId;
 
 	if (!canDelete) {
@@ -346,7 +364,7 @@ export const DELETE = async ({ params, request, cookies, url }) => {
 
 	try {
 		// Delete the physical file first.
-		await deleteStoredImage(image.eventId, image.filename);
+		await deleteStoredImage(image.eventId, image.storageKey);
 
 		// Then delete the database record.
 		await database

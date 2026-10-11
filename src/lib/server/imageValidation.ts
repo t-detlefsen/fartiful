@@ -1,5 +1,13 @@
 import sharp from 'sharp';
 
+export class ImageValidationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'ImageValidationError';
+	}
+}
+
+// Image restrictions
 export const IMAGE_LIMITS = {
 	maxSourceBytes: 10 * 1024 * 1024,
 	maxWidth: 8000,
@@ -9,13 +17,7 @@ export const IMAGE_LIMITS = {
 
 const ACCEPTED_FORMATS = new Set(['jpeg', 'png', 'webp', 'heif']);
 
-export class ImageValidationError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = 'ImageValidationError';
-	}
-}
-
+// Image buffer with metadata
 export type ProcessedImage = {
 	buffer: Buffer;
 	format: 'jpeg';
@@ -25,7 +27,9 @@ export type ProcessedImage = {
 	sourceFormat: string;
 };
 
+// Process image buffer and return processed with metadata
 export async function processImage(input: Buffer): Promise<ProcessedImage> {
+	// Check image buffer size
 	if (input.length === 0) {
 		throw new ImageValidationError('The image is empty');
 	}
@@ -34,6 +38,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
 		throw new ImageValidationError('The image is too large');
 	}
 
+	// Pull metadata from image
 	let metadata: sharp.Metadata;
 
 	try {
@@ -44,12 +49,14 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
 		throw new ImageValidationError('The file is not a valid image');
 	}
 
+	// Check image format
 	const format = metadata.format;
 
 	if (!format || !ACCEPTED_FORMATS.has(format)) {
 		throw new ImageValidationError('Unsupported image format');
 	}
 
+	// Check image dimensions
 	if (
 		!metadata.width ||
 		!metadata.height ||
@@ -70,6 +77,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
 		throw new ImageValidationError('Image contains too many pixels');
 	}
 
+	// Process image w/ sharp
 	let output: Buffer;
 
 	try {
@@ -79,7 +87,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
 			// Apply EXIF orientation before encoding.
 			.rotate()
 			// JPEG has no alpha channel. Use white for transparent PNG/WebP pixels.
-			.flatten({ background: '#ffffff' })
+			.flatten({ background: '#020614' })
 			.jpeg({
 				quality: 90,
 				mozjpeg: true
@@ -103,6 +111,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
 		);
 	}
 
+	// Return processed image
 	return {
 		buffer: output,
 		format: 'jpeg',

@@ -13,6 +13,12 @@ MIGRATIONS_DIR = database/migrations
 # Database connection string
 DB_URL = postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
+# Make arguments
+LOG_PRETTY ?= true
+LOG_LEVEL ?= trace
+PUBLIC_LANDING_INFO ?= true
+FEDERATION_INSTANCE ?= true
+
 help:
 	@echo "Available commands:"
 	@echo "  build           - Docker build the application"
@@ -56,10 +62,10 @@ migrate-down:
 build:
 	@echo "Building Docker images..."
 	docker build \
-	  --build-arg LOG_PRETTY=${LOG_PRETTY:-true} \
-	  --build-arg LOG_LEVEL=${LOG_LEVEL:-trace} \
-      --build-arg PUBLIC_LANDING_INFO=${PUBLIC_LANDING_INFO:-true} \
-	  --build-arg FEDERATION_INSTANCE=${FEDERATION_INSTANCE:-true} \
+	  --build-arg LOG_PRETTY=$(LOG_PRETTY) \
+	  --build-arg LOG_LEVEL=$(LOG_LEVEL) \
+      --build-arg PUBLIC_LANDING_INFO=$(PUBLIC_LANDING_INFO) \
+	  --build-arg FEDERATION_INSTANCE=$(FEDERATION_INSTANCE) \
 	  -t cactoide-custom .
 
 # Start all services
@@ -127,6 +133,6 @@ debug:
 		psql "$(DB_URL)" -f database/debug.sql && \
 		echo "debug.sql executed successfully!"; \
 	else \
-		echo "Seed file not found: database/debug.sql"; \
+		echo "Debug file not found: database/debug.sql"; \
 		exit 1; \
 	fi

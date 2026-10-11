@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
+	import { t } from '$lib/i18n/i18n.js';
 
 	export let slideNo;
 	export let totalSlides;
@@ -43,7 +44,7 @@
 				/>
 			</svg>
 
-			<p>Unable to load this photo.</p>
+			<p>{t('event.photoLoadError')}</p>
 		</div>
 	{:else}
 		<img
@@ -106,7 +107,7 @@
 
 	{#if attribute !== ''}
 	<div class="text-center text-sm text-violet-300">
-		Credit: {attribute}
+		{t('event.photoCredit')} {attribute}
 	</div>
 	{/if}
 </div>

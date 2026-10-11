@@ -88,6 +88,6 @@ export interface Media {
 	id: string;
 	event_id: string;
 	user_id: string;
-	filename: string;
+	storage_key: string;
 	created_at: string;
 }

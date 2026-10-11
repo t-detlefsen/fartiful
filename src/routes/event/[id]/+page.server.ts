@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 	}
 
 	try {
-		// Fetch event and RSVPs in parallel
+		// Fetch event, RSVPs, and media in parallel
 		const [eventData, rsvpData, mediaData] = await Promise.all([
 			database.select().from(events).where(eq(events.id, eventId)).limit(1),
 			database.select().from(rsvps).where(eq(rsvps.eventId, eventId)).orderBy(asc(rsvps.createdAt)),
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 			id: media.id,
 			event_id: media.eventId,
 			user_id: media.userId,
-			filename: media.filename,
+			storage_key: media.storageKey,
 			created_at: media.createdAt?.toISOString() || new Date().toISOString()
 		}));
 
