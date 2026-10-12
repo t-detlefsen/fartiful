@@ -8,7 +8,7 @@ import { dev } from '$app/environment';
 // Global flag to track if database health check has been performed
 let dbHealthCheckPerformed = false;
 
-const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\$/i;
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Perform database health check only once during application startup
@@ -37,7 +37,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const PATH = '/';
 
 	if (!cactoideUserId || (cactoideUserId && !UUID_V4_REGEX.test(cactoideUserId))) {
-		logger.debug({ userId }, 'No cactoideUserId cookie found, generating new one');
+		if (!cactoideUserId) {logger.debug({ userId }, 'No cactoideUserId cookie found, generating new one');}
+		else {
+			console.log(cactoideUserId)
+			logger.debug({ userId }, 'Old cactoideUserId, generating new one');}
 		event.cookies.set('cactoideUserId', userId, {
 			path: '/',
 			httpOnly: true,

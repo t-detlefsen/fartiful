@@ -6,15 +6,15 @@ BEGIN;
 -- where table_name = 'media';
 
 -- -- List specified column contents
--- SELECT storage_key FROM media;
+-- SELECT id FROM events;
 
 -- -- Create media table
 -- CREATE TABLE IF NOT EXISTS media (
 --     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --     event_id     VARCHAR(8) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
 --     user_id      VARCHAR(100) NOT NULL,
---     filename     VARCHAR(100) NOT NULL,
---     created_at  TIMESTAMPTZ DEFAULT NOW()
+--     storage_key  VARCHAR(50) NOT NULL,
+--     created_at   TIMESTAMPTZ DEFAULT NOW()
 -- );
 
 -- -- Insert toy value
@@ -25,5 +25,8 @@ BEGIN;
 -- UPDATE media
 -- SET filename = 'IMG_6642.jpeg'
 -- WHERE filename = 'IMG_6642.JPG';
+
+-- -- Remove Record
+-- DELETE FROM events WHERE id = 'F65x95uK';
 
 COMMIT;
