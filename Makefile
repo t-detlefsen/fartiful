@@ -13,6 +13,12 @@ MIGRATIONS_DIR = database/migrations
 # Database connection string
 DB_URL = postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
+# Make arguments
+LOG_PRETTY ?= true
+LOG_LEVEL ?= trace
+PUBLIC_LANDING_INFO ?= true
+FEDERATION_INSTANCE ?= true
+
 help:
 	@echo "Available commands:"
 	@echo "  build           - Docker build the application"
@@ -28,6 +34,7 @@ help:
 	@echo "  format          - Format the project"
 	@echo "  migrate-up      - Apply invite-only events migration"
 	@echo "  migrate-down    - Rollback invite-only events migration"
+	@echo "  debug           - Run custom DB command via debug.sql"
 
 # Apply invite-only events migration
 migrate-up:
@@ -54,7 +61,12 @@ migrate-down:
 # Build the Docker images
 build:
 	@echo "Building Docker images..."
-	docker compose build
+	docker build \
+	  --build-arg LOG_PRETTY=$(LOG_PRETTY) \
+	  --build-arg LOG_LEVEL=$(LOG_LEVEL) \
+      --build-arg PUBLIC_LANDING_INFO=$(PUBLIC_LANDING_INFO) \
+	  --build-arg FEDERATION_INSTANCE=$(FEDERATION_INSTANCE) \
+	  -t cactoide-custom .
 
 # Start all services
 up:
@@ -113,3 +125,14 @@ i18n:
 		exit 1; \
 	fi
 	@./scripts/i18n-check.sh --missing-only $(FILE)
+
+# Seed the database with sample data
+debug:
+	@echo "Running debug.sql..."
+	@if [ -f "database/debug.sql" ]; then \
+		psql "$(DB_URL)" -f database/debug.sql && \
+		echo "debug.sql executed successfully!"; \
+	else \
+		echo "Debug file not found: database/debug.sql"; \
+		exit 1; \
+	fi

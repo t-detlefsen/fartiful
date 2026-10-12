@@ -3,9 +3,12 @@ import type { Handle } from '@sveltejs/kit';
 import { generateUserId } from '$lib/generateUserId.js';
 import { ensureDatabaseConnection } from '$lib/database/healthCheck';
 import { logger } from '$lib/logger';
+import { dev } from '$app/environment';
 
 // Global flag to track if database health check has been performed
 let dbHealthCheckPerformed = false;
+
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Perform database health check only once during application startup
@@ -33,9 +36,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const MAX_AGE = 60 * 60 * 24 * DAYS;
 	const PATH = '/';
 
-	if (!cactoideUserId) {
-		logger.debug({ userId }, 'No cactoideUserId cookie found, generating new one');
-		event.cookies.set('cactoideUserId', userId, { path: PATH, maxAge: MAX_AGE });
+	if (!cactoideUserId || (cactoideUserId && !UUID_V4_REGEX.test(cactoideUserId))) {
+		if (!cactoideUserId) {logger.debug({ userId }, 'No cactoideUserId cookie found, generating new one');}
+		else {
+			console.log(cactoideUserId)
+			logger.debug({ userId }, 'Old cactoideUserId, generating new one');}
+		event.cookies.set('cactoideUserId', userId, {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: !dev,
+			maxAge: MAX_AGE
+		});
 	} else {
 		logger.debug({ cactoideUserId }, 'cactoideUserId cookie found, using existing one');
 	}

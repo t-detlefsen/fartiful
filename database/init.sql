@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Media
+CREATE TABLE IF NOT EXISTS media (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id     VARCHAR(8) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id      VARCHAR(100) NOT NULL,
+    storage_key  VARCHAR(50) NOT NULL,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =======================================
 -- Indexes
 -- =======================================
