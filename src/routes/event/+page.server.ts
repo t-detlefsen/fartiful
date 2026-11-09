@@ -1,5 +1,6 @@
 import { database } from '$lib/database/db';
-import { events } from '$lib/database/schema';
+import { events, media } from '$lib/database/schema';
+import type { Media} from '$lib/types';
 import { fail } from '@sveltejs/kit';
 import { eq, desc } from 'drizzle-orm';
 import type { Actions } from './$types';
@@ -43,7 +44,7 @@ export const load = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	deleteEvent: async ({ request, cookies }) => {
+	deleteEvent: async ({ request, cookies, fetch }) => {
 		const formData = await request.formData();
 		const eventId = formData.get('eventId') as string;
 		const userId = cookies.get('cactoideUserId');
@@ -63,6 +64,36 @@ export const actions: Actions = {
 			if (eventData.userId !== userId) {
 				return fail(403, { error: 'You do not have permission to delete this event' });
 			}
+
+			// Get event files
+			const eventMedia = await database.select().from(media).where(eq(media.eventId, eventId));
+
+			const transformedMedia = eventMedia.map((media) => ({
+				id: media.id,
+				event_id: media.eventId,
+				user_id: media.userId,
+				storage_key: media.storageKey,
+				created_at: media.createdAt?.toISOString() || new Date().toISOString()
+			}));
+
+			// Remove event files
+			for (const image of transformedMedia) {
+				const response = await fetch(
+					`/api/event/${eventId}/media?mediaId=${encodeURIComponent(image.id)}`,
+					{
+						method: 'DELETE',
+						credentials: 'same-origin'
+					}
+				);
+
+				const result = await response.json();
+
+				if (!response.ok) {
+					throw new Error(result.error ?? 'Failed to delete image');
+				}
+			}
+
+			// TODO: Add API endpoint to clean up empty directory
 
 			// Delete the event (RSVPs will be deleted automatically due to CASCADE)
 			await database.delete(events).where(eq(events.id, eventId));

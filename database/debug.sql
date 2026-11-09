@@ -1,12 +1,32 @@
 BEGIN;
 
+-- -- List column names 
 -- select COLUMN_NAME
 -- from information_schema.columns
--- where table_name = 'events';
+-- where table_name = 'media';
 
--- SELECT description FROM events;
+-- -- List specified column contents
+-- SELECT id FROM events;
 
-ALTER TABLE events
-ADD description VARCHAR(240);
+-- -- Create media table
+-- CREATE TABLE IF NOT EXISTS media (
+--     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     event_id     VARCHAR(8) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+--     user_id      VARCHAR(100) NOT NULL,
+--     storage_key  VARCHAR(50) NOT NULL,
+--     created_at   TIMESTAMPTZ DEFAULT NOW()
+-- );
+
+-- -- Insert toy value
+-- INSERT INTO rsvps (event_id, user_id, name)
+-- VALUES ('sqodG2ev', 'user_1790591757875_ljt5c2dmy', 'TOM');
+
+-- -- Update Record
+-- UPDATE media
+-- SET filename = 'IMG_6642.jpeg'
+-- WHERE filename = 'IMG_6642.JPG';
+
+-- -- Remove Record
+-- DELETE FROM events WHERE id = 'F65x95uK';
 
 COMMIT;

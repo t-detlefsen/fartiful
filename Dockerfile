@@ -2,6 +2,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 
+ENV MEDIA_ROOT=/app/media
+
 RUN npm ci
 
 ARG PUBLIC_LANDING_INFO
@@ -28,8 +30,17 @@ COPY --from=builder /app/build build/
 COPY --from=builder /app/node_modules node_modules/
 COPY package.json .
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN mkdir -p /app/media && chown -R node:node /app
+
+COPY --from=builder --chown=node:node /app/build build/
+COPY --from=builder --chown=node:node /app/node_modules node_modules/
+COPY --chown=node:node package.json .
+
+USER node
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/healthz || exit 1
